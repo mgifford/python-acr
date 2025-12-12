@@ -1,0 +1,6 @@
+Issue Title,Issue URL,Status,Priority,Component,WCAG SC
+The “reduce motion” setting in the operating system should be respected,https://www.drupal.org/project/drupal/issues/3542774,Needs review,Major,navigation.module,
+"Cached forms can have duplicate HTML IDs, which disrupts accessible form labels",https://www.drupal.org/project/drupal/issues/1852090,Needs work,Major,forms system,
+CKEditor 5: scroll jump after dialog close,https://www.drupal.org/project/drupal/issues/3410598,Needs work,Normal,ckeditor5.module,
+[drupalMedia] Using the Insert Media button causes the window to scroll to the bottom of the page,https://www.drupal.org/project/drupal/issues/3415961,Needs work,Normal,media system,
+HTML5 validation is preventing form submit and not fully accessible,https://www.drupal.org/project/drupal/issues/1797438,Needs work,Major,forms system,

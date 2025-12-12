@@ -1,0 +1,69 @@
+INSTALLATION INSTRUCTIONS
+=========================
+
+PREREQUISITES
+-------------
+1. Python 3.9 or higher
+2. pip (Python package installer)
+3. (Optional) Ollama installed locally for private AI inference
+4. (Optional) Google Gemini API Key for cloud-based AI inference
+
+SETUP STEPS
+-----------
+
+1. Clone the Repository
+   --------------------
+   git clone <your-repo-url>
+   cd acr-generator
+
+2. Set up a Virtual Environment (Recommended)
+   ------------------------------------------
+   # Windows
+   python -m venv venv
+   .\venv\Scripts\activate
+
+   # macOS/Linux
+   python3 -m venv venv
+   source venv/bin/activate
+
+3. Install Dependencies
+   --------------------
+   pip install -r requirements.txt
+
+   (Ensure your requirements.txt contains: requests, beautifulsoup4, pandas, pyyaml, python-dotenv, google-generativeai, argparse, ollama)
+
+4. Configure Environment Variables
+   -------------------------------
+   Create a file named `.env` in the root directory.
+   Add your Google Gemini API key if you plan to use the cloud backend:
+
+   GEMINI_API_KEY=your_api_key_here
+
+5. Set up Ollama (Optional - for local AI)
+   ---------------------------------------
+   If you wish to run the summarization locally without API costs:
+   1. Download and install Ollama from https://ollama.com/
+   2. Pull the model you intend to use (e.g., Gemma 3, Llama 3):
+      
+      ollama pull gemma3:4b
+
+   3. Ensure the Ollama server is running:
+      ollama serve
+
+6. Run the Application
+   -------------------
+   # Using Gemini (Cloud)
+   python run_acr.py --repo drupal
+
+   # Using Ollama (Local)
+   python run_acr.py --repo drupal --ai-backend ollama --model gemma3:4b
+      
+      ollama serve
+
+VERIFICATION
+------------
+Run the help command to ensure the script is accessible:
+
+   python run_acr.py --help
+
+You should see usage instructions for the Drupal ACR Generator.
