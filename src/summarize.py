@@ -73,6 +73,11 @@ def run(results_dir, ai_config):
     print(f"Reading from {infile}")
     df = pd.read_csv(infile)
     
+    # Ensure output columns exist
+    for col in ['ai_wcag', 'acr_note', 'dev_note']:
+        if col not in df.columns:
+            df[col] = ""
+    
     backend = ai_config.get('backend', 'gemini')
     model_name = ai_config.get('model_name')
     
@@ -87,22 +92,53 @@ def run(results_dir, ai_config):
         target_model = model_name if model_name else 'gemini-1.5-flash'
         model = genai.GenerativeModel(target_model)
     
+    # Determine output file and check for existing progress
+    timestamp = pd.Timestamp.now().strftime('%Y%m%d')
+    outfile = results_dir / f"issues_summarized_{timestamp}.csv"
+    
+    # Check if there is an existing summary file to resume from
+    existing_summaries = sorted(results_dir.glob("issues_summarized_*.csv"))
+    processed_ids = set()
+    
+    if existing_summaries:
+        # Use the latest one
+        outfile = existing_summaries[-1]
+        print(f"Found existing summary file: {outfile}")
+        try:
+            existing_df = pd.read_csv(outfile)
+            if 'Issue ID' in existing_df.columns:
+                processed_ids = set(existing_df['Issue ID'].astype(str))
+            print(f"Resuming... {len(processed_ids)} issues already processed.")
+        except Exception as e:
+            print(f"Error reading existing summary: {e}. Starting fresh.")
+    
     print(f"Summarizing {len(df)} issues...")
     
     for idx, row in df.iterrows():
+        if str(row['Issue ID']) in processed_ids:
+            continue
+
         print(f"Processing {idx+1}/{len(df)}: {row['Issue Title'][:30]}...")
         wcag, acr, dev = analyze_issue(row, model)
         
         # Prefer AI wcag detection if raw was unknown
         final_wcag = wcag if row['wcag_sc'] == "Unknown" else row['wcag_sc']
         
-        df.at[idx, 'ai_wcag'] = final_wcag
-        df.at[idx, 'acr_note'] = acr
-        df.at[idx, 'dev_note'] = dev
+        # Update the row data
+        row['ai_wcag'] = final_wcag
+        row['acr_note'] = acr
+        row['dev_note'] = dev
+        
+        # Save incrementally
+        # Create a DataFrame for this single row
+        single_df = pd.DataFrame([row])
+        
+        # Append to CSV
+        # If file doesn't exist, write header. If it does, skip header.
+        header = not outfile.exists()
+        single_df.to_csv(outfile, mode='a', header=header, index=False)
         
         if backend == 'gemini':
             time.sleep(1) # Rate limit for Gemini
-        
-    outfile = results_dir / f"issues_summarized_{pd.Timestamp.now().strftime('%Y%m%d')}.csv"
-    df.to_csv(outfile, index=False)
+            
     print(f"Saved summaries to {outfile}")

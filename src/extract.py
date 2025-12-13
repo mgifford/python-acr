@@ -4,6 +4,93 @@ import pandas as pd
 from datetime import datetime
 import time
 import re
+import os
+
+def extract_github_issues(repo_full_name, limit=50):
+    print(f"Extracting GitHub issues for: {repo_full_name}")
+    # repo_full_name should be "owner/repo"
+    
+    labels = ["accessibility", "a11y", "wcag"]
+    all_issues = {}
+    
+    headers = {
+        "Accept": "application/vnd.github.v3+json"
+    }
+    token = os.getenv("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"token {token}"
+
+    # Discover relevant labels first
+    print("Discovering accessibility labels...")
+    labels_url = f"https://api.github.com/repos/{repo_full_name}/labels"
+    try:
+        l_resp = requests.get(labels_url, headers=headers, params={"per_page": 100})
+        if l_resp.status_code == 200:
+            repo_labels = [l['name'] for l in l_resp.json()]
+            # Find labels containing keywords
+            discovered = [l for l in repo_labels if any(k in l.lower() for k in ["accessibility", "a11y", "wcag"])]
+            if discovered:
+                print(f"Found labels: {discovered}")
+                labels = discovered
+            else:
+                print("No specific accessibility labels found. Using defaults.")
+    except Exception as e:
+        print(f"Warning: Could not auto-discover labels: {e}")
+
+    for label in labels:
+        page = 1
+        while True:
+            url = f"https://api.github.com/repos/{repo_full_name}/issues"
+            params = {
+                "labels": label,
+                "state": "open",
+                "per_page": 100, # Max per page
+                "page": page
+            }
+            
+            try:
+                response = requests.get(url, headers=headers, params=params)
+                if response.status_code != 200:
+                    print(f"Error fetching GitHub issues: {response.status_code} {response.text}")
+                    break
+                
+                issues = response.json()
+                if not issues:
+                    break
+                
+                for issue in issues:
+                    # Skip pull requests if we only want issues
+                    if "pull_request" in issue:
+                        continue
+                        
+                    issue_id = str(issue["number"])
+                    if issue_id not in all_issues:
+                        all_issues[issue_id] = {
+                            "Issue ID": issue_id,
+                            "Issue Title": issue["title"],
+                            "Description": issue["body"] if issue["body"] else "",
+                            "Issue URL": issue["html_url"],
+                            "Project": repo_full_name,
+                            "Status": issue["state"],
+                            "Priority": "Unknown", # GitHub doesn't have standard priority field
+                            "Component": "Unknown",
+                            "Version": "Unknown",
+                            "Created": issue["created_at"],
+                            "wcag_sc": "Unknown" # We'd need to parse labels or body for this
+                        }
+                
+                if len(all_issues) >= limit:
+                    break
+                page += 1
+            except Exception as e:
+                print(f"Exception fetching GitHub issues: {e}")
+                break
+        
+        if len(all_issues) >= limit:
+            break
+            
+    print(f"Total unique GitHub issues found: {len(all_issues)}")
+    return pd.DataFrame(list(all_issues.values()))
 
 def extract_drupal_issues(project_id, limit=50):
     print(f"Extracting issues for project: {project_id}")
@@ -49,68 +136,105 @@ def extract_drupal_issues(project_id, limit=50):
             "limit": limit
         }
         
-        try:
-            print(f"Fetching issues with tag '{tag}'...")
-            response = requests.get(base_url, params=params)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            table = soup.find('table', class_='project-issue')
-            if not table:
-                continue
-
-            rows = table.find('tbody').find_all('tr')
-            
-            for row in rows:
-                try:
-                    title_link = row.find('td', class_='views-field-title').find('a')
-                    title = title_link.text.strip()
-                    link = 'https://www.drupal.org' + title_link['href']
-                    issue_id = link.split('/')[-1]
-                    
-                    if issue_id in all_issues:
-                        continue # Skip duplicates
-
-                    # Safe extraction of fields
-                    def get_text(class_name):
-                        el = row.find('td', class_=class_name)
-                        return el.text.strip() if el else "Unknown"
-
-                    status = get_text('views-field-field-issue-status')
-                    priority = get_text('views-field-field-issue-priority')
-                    component = get_text('views-field-field-issue-component')
-                    version = get_text('views-field-field-issue-version')
-                    created = get_text('views-field-created')
-                    
-                    description = title 
-
-                    all_issues[issue_id] = {
-                        "Issue ID": issue_id,
-                        "Issue Title": title,
-                        "Description": description, 
-                        "Issue URL": link,
-                        "Project": project_id,
-                        "Status": status,
-                        "Priority": priority,
-                        "Component": component,
-                        "Version": version,
-                        "Created": created,
-                        "wcag_sc": "Unknown"
-                    }
-                    
-                except Exception as e:
+        # Retry logic
+        max_retries = 3
+        backoff = 5
+        response = None
+        
+        for attempt in range(max_retries):
+            try:
+                print(f"Fetching issues with tag '{tag}' (Attempt {attempt+1})...")
+                response = requests.get(base_url, params=params)
+                
+                if response.status_code == 429:
+                    wait = backoff * (attempt + 1)
+                    print(f"Rate limited (429). Waiting {wait} seconds...")
+                    time.sleep(wait)
                     continue
                     
-        except Exception as e:
-            print(f"Failed to fetch tag '{tag}': {e}")
+                response.raise_for_status()
+                break # Success
+            except Exception as e:
+                print(f"Error fetching tag '{tag}': {e}")
+                time.sleep(1)
+        
+        if not response or response.status_code != 200:
+            print(f"Failed to fetch tag '{tag}' after retries.")
             continue
+
+        soup = BeautifulSoup(response.content, 'html.parser')
+            
+        table = soup.find('table', class_='project-issue')
+        if not table:
+            continue
+
+        rows = table.find('tbody').find_all('tr')
+        
+        # Parse WCAG SC from tag if possible
+        # tag is like "wcag111" -> "1.1.1"
+        current_wcag = "Unknown"
+        if tag.startswith("wcag") and tag[4:].isdigit():
+            nums = tag[4:]
+            if len(nums) >= 3:
+                current_wcag = f"{nums[0]}.{nums[1]}.{nums[2:]}"
+        elif tag in ["accessibility", "a11y", "wcag"]:
+            current_wcag = "General"
+        
+        for row in rows:
+            try:
+                title_link = row.find('td', class_='views-field-title').find('a')
+                title = title_link.text.strip()
+                link = 'https://www.drupal.org' + title_link['href']
+                issue_id = link.split('/')[-1]
+                
+                if issue_id in all_issues:
+                    # Update WCAG if we found a more specific one
+                    if all_issues[issue_id]["wcag_sc"] in ["Unknown", "General"] and current_wcag not in ["Unknown", "General"]:
+                         all_issues[issue_id]["wcag_sc"] = current_wcag
+                    continue 
+
+                # Safe extraction of fields
+                def get_text(class_name):
+                    el = row.find('td', class_=class_name)
+                    return el.text.strip() if el else "Unknown"
+
+                status = get_text('views-field-field-issue-status')
+                priority = get_text('views-field-field-issue-priority')
+                component = get_text('views-field-field-issue-component')
+                version = get_text('views-field-field-issue-version')
+                created = get_text('views-field-created')
+                
+                description = title 
+
+                all_issues[issue_id] = {
+                    "Issue ID": issue_id,
+                    "Issue Title": title,
+                    "Description": description, 
+                    "Issue URL": link,
+                    "Project": project_id,
+                    "Status": status,
+                    "Priority": priority,
+                    "Component": component,
+                    "Version": version,
+                    "Created": created,
+                    "wcag_sc": current_wcag
+                }
+                
+            except Exception as e:
+                continue
+        
+        # Be nice to the server
+        time.sleep(1)
 
     print(f"Total unique issues found: {len(all_issues)}")
     return pd.DataFrame(list(all_issues.values()))
 
 def run(project_id, repo_id, results_dir):
     # repo_id is passed from argparse, usually same as project_id or 'drupal'
-    df = extract_drupal_issues(repo_id if repo_id else 'drupal')
+    if repo_id and "/" in repo_id:
+        df = extract_github_issues(repo_id)
+    else:
+        df = extract_drupal_issues(repo_id if repo_id else 'drupal')
     
     if not df.empty:
         timestamp = datetime.now().strftime('%Y%m%d')

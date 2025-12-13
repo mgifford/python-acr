@@ -24,11 +24,15 @@ def main():
     
     # Create a specific subdirectory for this run configuration
     # This ensures we don't overwrite results when running different models/repos
-    repo_name = args.repo if args.repo else "default"
-    model_name = args.model.replace(":", "-") if args.model else "default"
-    run_folder_name = f"{repo_name}_{args.ai_backend}_{model_name}"
+    repo_name = args.repo.replace("/", "-") if args.repo else "default"
+    model_name = args.model.replace(":", "") if args.model else "default"
     
-    results_dir = Path("results") / today / run_folder_name
+    # User requested format: CkEditor-gemma3b-12-13-2025
+    # We put it directly under results/ as requested, or we can keep the date structure.
+    # The user asked for /results/CkEditor-gemma3b-12-13-2025/
+    run_folder_name = f"{repo_name}-{model_name}-{today}"
+    
+    results_dir = Path("results") / run_folder_name
     results_dir.mkdir(parents=True, exist_ok=True)
     print(f"Results will be saved to: {results_dir}")
 
