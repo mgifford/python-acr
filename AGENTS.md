@@ -24,8 +24,11 @@ This project is an AI Accessibility Validator (`python-acr`) that automates the 
 - **Main Entry Point**: `run_acr.py`
 - **Command Structure**:
   ```bash
-  python run_acr.py --repo <repo_id> --ai-backend <ollama|gemini> --model <model_name>
+  python run_acr.py --repo <repo_id> --ai-backend <ollama|gemini> --model <model_name> --tags <tag1,tag2>
   ```
+- **Custom Tags**:
+  - Use `--tags` to override default accessibility tags (e.g., `--tags "performance,sustainability"`).
+  - Works for both Drupal (issue tags) and GitHub (issue labels).
 - **Long-running Processes (macOS)**: Use `caffeinate` to prevent sleep during long scans.
   ```bash
   caffeinate -i ./venv/bin/python3 run_acr.py ...
