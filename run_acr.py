@@ -21,7 +21,14 @@ def main():
 
     # Create date-based results directory
     today = pd.Timestamp.now().strftime('%m-%d-%Y')
-    results_dir = Path("results") / today
+    
+    # Create a specific subdirectory for this run configuration
+    # This ensures we don't overwrite results when running different models/repos
+    repo_name = args.repo if args.repo else "default"
+    model_name = args.model.replace(":", "-") if args.model else "default"
+    run_folder_name = f"{repo_name}_{args.ai_backend}_{model_name}"
+    
+    results_dir = Path("results") / today / run_folder_name
     results_dir.mkdir(parents=True, exist_ok=True)
     print(f"Results will be saved to: {results_dir}")
 
