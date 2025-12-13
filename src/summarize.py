@@ -1,8 +1,13 @@
 import pandas as pd
-import google.generativeai as genai
 import os
 import time
 import ollama
+
+# Conditionally import genai only when needed
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
 
 class OllamaModel:
     def __init__(self, model_name="gemma3:4b"):

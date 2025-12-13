@@ -14,6 +14,11 @@ This project is an AI Accessibility Validator (`python-acr`) that automates the 
   ```bash
   pip install -r requirements.txt
   ```
+- **Ollama Setup** (for local AI):
+  - Install Ollama application from https://ollama.ai
+  - The `ollama` Python package (in requirements.txt) is the client library
+  - Check installed models: `ollama list`
+  - Example models: `gpt-oss:20b`, `gemma3:4b`, `llama3`
 
 ## Running the Application
 - **Main Entry Point**: `run_acr.py`
@@ -47,7 +52,8 @@ This project is an AI Accessibility Validator (`python-acr`) that automates the 
   - Ensure new logic supports both Drupal and GitHub workflows.
 
 ## Testing & Validation
-- **GitHub Extraction**: Verify with a known repo (e.g., `ckeditor/ckeditor5`).
+- **GitHub Extraction**: Verify with a known repo (e.g., `ckeditor/ckeditor5`, `joomla/joomla-cms`).
+- **Ollama Models**: Check available models with `ollama list`. Tested with `gpt-oss:20b` (13 GB, 20B parameters).
 - **Drupal Extraction**: Verify with `drupal` project ID.
 - **AI Backend**: Ensure `ollama list` shows the requested model before running.
 
