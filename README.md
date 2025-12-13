@@ -39,7 +39,7 @@ This tool executes a 4-step pipeline to transform raw issue data into a Section 
 
 ```mermaid
 graph LR
-    A[Drupal.org Issue Queue] -->|Step 1: Extract| B(Raw Issues CSV)
+    A[Drupal.org / GitHub] -->|Step 1: Extract| B(Raw Issues CSV)
     B -->|Step 2: Summarize <br/> 🤖 Gemini/Ollama| C(AI Summaries CSV)
     C -->|Step 3: Consolidate <br/> 🤖 Gemini/Ollama| D(Consolidated CSV)
     D -->|Step 4: Generate| E[OpenACR YAML/JSON]
@@ -48,7 +48,7 @@ graph LR
     style E fill:#9f9,stroke:#333,stroke-width:2px
 ```
 
-* **Extract:** Crawls Drupal.org for tickets tagged `accessibility`, `wcag`, and specific SC tags (e.g., `wcag111`, `wcag21`), capturing metadata.
+* **Extract:** Crawls Drupal.org or GitHub for tickets tagged `accessibility`, `wcag`, and specific SC tags (e.g., `wcag111`, `wcag21`), capturing metadata.
 * **Summarize:** Uses AI to analyze issue descriptions, determining the specific WCAG Success Criterion (e.g., 1.1.1) and writing professional "ACR Notes."
 * **Consolidate:** Groups issues by WCAG criterion to determine overall conformance levels (e.g., partially-supports).
 * **Generate:** Outputs valid OpenACR YAML and JSON files.
@@ -95,7 +95,11 @@ The master script `run_acr.py` orchestrates the entire pipeline. Results are sav
 ### Basic Command
 Run the full pipeline using the default Google Gemini backend:
 ```bash
+# For Drupal
 python run_acr.py --repo drupal
+
+# For GitHub
+python run_acr.py --repo joomla/joomla-cms
 ```
 
 ### Using Local AI (Ollama) 🦙
@@ -104,16 +108,21 @@ Run entirely locally to avoid API costs and keep data private:
 python run_acr.py --repo drupal --ai-backend ollama --model gemma3:4b
 ```
 
+### Custom Tag Scanning (Performance, Sustainability, etc.) 🏷️
+You can override the default accessibility tags to scan for any topic:
+```bash
+python run_acr.py --repo drupal --tags "performance,sustainability"
+```
+
 ### Command Line Arguments
 
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
-| `--repo` | String | None | The project ID to scrape (e.g., `drupal`, `ckeditor`). |
+| `--repo` | String | None | The project ID (e.g., `drupal`) or GitHub repo (`owner/repo`). |
 | `--step` | Integer | All | Run a specific step (1, 2, 3, or 4). |
-| `--ai-backend` | String | `gemini` | Choose AI backend: `gemini` or `ollama`. |
+| `--ai-backend` | String | `gemini` | Choose AI backend: `gemini` (Cloud) or `ollama` (Local). |
 | `--model` | String | None | Specific model name (e.g., `gemma3:4b`, `llama3`). |
-| `--ai-backend` | String | `gemini` | Choose AI provider: `gemini` (Cloud) or `ollama` (Local). |
-| `--model` | String | None | Specific model name (e.g., `llama3`, `gemini-1.5-pro`). |
+| `--tags` | String | None | Comma-separated list of tags to search (overrides defaults). |
 
 ---
 
@@ -157,6 +166,12 @@ python run_acr.py --step 4
 | **Summaries** | AI-enriched data | ACR Note, Developer Note, WCAG Assessment |
 | **Consolidated** | Chapter-level data | WCAG SC, Conformance Level, Remarks |
 | **OpenACR YAML** | Final Report | Nested YAML structure conforming to Section 508 |
+
+---
+
+## 🤖 For AI Agents
+
+This repository includes an `AGENTS.md` file in the root directory. This file contains detailed context, coding conventions, and instructions specifically designed to help AI coding agents understand and work with this codebase effectively.
 
 ---
 
