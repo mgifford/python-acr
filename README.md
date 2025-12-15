@@ -95,11 +95,13 @@ The master script `run_acr.py` orchestrates the entire pipeline. Results are sav
 ### Basic Command
 Run the full pipeline using the default Google Gemini backend:
 ```bash
-# For Drupal
+# For Drupal Projects (use project ID)
 python run_acr.py --repo drupal
 
-# For GitHub
-python run_acr.py --repo joomla/joomla-cms
+# For GitHub Repositories (use 'owner/repo' OR full URL)
+python run_acr.py --repo ckeditor/ckeditor5
+# OR
+python run_acr.py --repo https://github.com/ckeditor/ckeditor5
 ```
 
 ### Using Local AI (Ollama) 🦙
@@ -118,7 +120,7 @@ python run_acr.py --repo drupal --tags "performance,sustainability"
 
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
-| `--repo` | String | None | The project ID (e.g., `drupal`) or GitHub repo (`owner/repo`). |
+| `--repo` | String | None | Drupal project ID (e.g. `drupal`) or GitHub repo (`owner/repo` or URL). |
 | `--step` | Integer | All | Run a specific step (1, 2, 3, or 4). |
 | `--ai-backend` | String | `gemini` | Choose AI backend: `gemini` (Cloud) or `ollama` (Local). |
 | `--model` | String | None | Specific model name (e.g., `gemma3:4b`, `llama3`). |

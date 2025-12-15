@@ -15,9 +15,20 @@ def main():
                         help="Choose AI backend (default: gemini)")
     parser.add_argument("--model", type=str, 
                         help="Specific model name (e.g., 'llama3', 'gemini-1.5-pro')")
+    parser.add_argument("--tags", type=str,
+                        help="Comma-separated list of tags to search for (overrides default accessibility tags)")
     
     args = parser.parse_args()
     load_dotenv()
+
+    # Normalize repo input if it's a GitHub URL
+    if args.repo and "github.com" in args.repo:
+        # Strip protocol and domain
+        clean_repo = args.repo.replace("https://github.com/", "").replace("http://github.com/", "")
+        # Strip trailing slash
+        if clean_repo.endswith("/"):
+            clean_repo = clean_repo[:-1]
+        args.repo = clean_repo
 
     # Create date-based results directory
     today = pd.Timestamp.now().strftime('%m-%d-%Y')
@@ -45,7 +56,8 @@ def main():
     if not args.step or args.step == 1:
         print("\n--- Step 1: Extracting Issues ---")
         if args.repo:
-            extract.run('drupal', args.repo, results_dir)
+            tags_list = args.tags.split(",") if args.tags else None
+            extract.run('drupal', args.repo, results_dir, tags=tags_list)
 
     if not args.step or args.step == 2:
         print(f"\n--- Step 2: Summarizing with {args.ai_backend.upper()} ---")
