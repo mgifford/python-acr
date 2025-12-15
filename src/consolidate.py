@@ -82,7 +82,12 @@ def run(results_dir, ai_config):
     else:
         print("Using Gemini backend")
         genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        target_model = model_name if model_name else 'gemini-1.5-flash'
+        # Ensure model name has models/ prefix
+        if model_name:
+            target_model = model_name if model_name.startswith('models/') else f'models/{model_name}'
+        else:
+            target_model = 'models/gemini-2.0-flash'
+        print(f"Using Gemini model: {target_model}")
         model = genai.GenerativeModel(target_model)
     
     consolidated = []
