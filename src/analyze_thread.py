@@ -249,6 +249,14 @@ def run(results_dir, ai_config):
             df.at[idx, 'paste_summary'] = paste
             df.at[idx, 'related_resources'] = resources
             
+            # Display the generated content
+            print(f"\n{'='*80}")
+            print(f"📋 JOURNEY: {journey[:200]}..." if len(journey) > 200 else f"📋 JOURNEY: {journey}")
+            print(f"\n✅ TODO: {todo[:150]}..." if len(todo) > 150 else f"✅ TODO: {todo}")
+            print(f"\n📝 PASTE SUMMARY: {paste}")
+            print(f"\n🔗 RESOURCES: {resources[:200]}..." if len(resources) > 200 else f"🔗 RESOURCES: {resources}")
+            print(f"{'='*80}\n")
+            
             # Save progress incrementally
             if (idx + 1) % 10 == 0:
                 df.to_csv(outfile, index=False)
