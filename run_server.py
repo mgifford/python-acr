@@ -20,9 +20,14 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             
             files = []
-            # Look for summarized issues recursively in results/
-            for file_path in glob.glob("results/**/issues_summarized_*.csv", recursive=True):
+            # Look for thread analyzed files first, then summarized issues
+            for file_path in glob.glob("results/**/issues_thread_analyzed_*.csv", recursive=True):
                 files.append(file_path)
+            
+            # If no thread analyzed files, fall back to summarized
+            if not files:
+                for file_path in glob.glob("results/**/issues_summarized_*.csv", recursive=True):
+                    files.append(file_path)
             
             # Sort files to show newest first (by modification time or name)
             files.sort(key=os.path.getmtime, reverse=True)

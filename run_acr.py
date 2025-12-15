@@ -3,12 +3,12 @@ import os
 import pandas as pd
 from dotenv import load_dotenv
 from pathlib import Path
-from src import extract, summarize, consolidate, generate_yaml
+from src import extract, summarize, analyze_thread, consolidate, generate_yaml
 
 def main():
     parser = argparse.ArgumentParser(description="Automated OpenACR Generator")
     parser.add_argument("--repo", type=str, help="Repo ID (e.g. 'drupal')")
-    parser.add_argument("--step", type=int, choices=[1, 2, 3, 4], help="Run specific step")
+    parser.add_argument("--step", type=int, choices=[1, 2, 3, 4, 5], help="Run specific step (1=extract, 2=summarize, 3=analyze threads, 4=consolidate, 5=generate YAML)")
     
     # New AI arguments
     parser.add_argument("--ai-backend", choices=['gemini', 'ollama'], default='gemini', 
@@ -64,11 +64,15 @@ def main():
         summarize.run(results_dir, ai_config)
 
     if not args.step or args.step == 3:
-        print(f"\n--- Step 3: Consolidating with {args.ai_backend.upper()} ---")
-        consolidate.run(results_dir, ai_config)
+        print(f"\n--- Step 3: Analyzing Issue Threads with {args.ai_backend.upper()} ---")
+        analyze_thread.run(results_dir, ai_config)
 
     if not args.step or args.step == 4:
-        print("\n--- Step 4: Generating YAML ---")
+        print(f"\n--- Step 4: Consolidating with {args.ai_backend.upper()} ---")
+        consolidate.run(results_dir, ai_config)
+
+    if not args.step or args.step == 5:
+        print("\n--- Step 5: Generating YAML ---")
         generate_yaml.run(results_dir)
 
 if __name__ == "__main__":

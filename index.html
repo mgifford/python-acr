@@ -77,17 +77,60 @@
             background-color: #f1f5f9;
         }
 
-        /* Single Panel Layout */
+        /* Resizable Panel Layout */
         .review-panel {
             width: 100%;
-            max-width: 900px; /* Limit width for readability on large screens */
+            max-width: 1600px;
+            padding: 0;
+            overflow: hidden;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: row;
+            gap: 0;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        .content-column {
+            flex: 1 1 55%;
+            min-width: 400px;
             padding: 25px;
             overflow-y: auto;
-            background: var(--bg-color);
             display: flex;
             flex-direction: column;
             gap: 20px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.05); /* Subtle shadow */
+        }
+
+        .validation-column {
+            flex: 1 1 45%;
+            min-width: 350px;
+            padding: 25px;
+            overflow-y: auto;
+            background: #fafbfc;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .resizer {
+            width: 8px;
+            cursor: col-resize;
+            background: var(--border-color);
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .resizer:hover {
+            background: #cbd5e1;
+        }
+
+        .resizer::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 3px;
+            height: 40px;
+            background: #94a3b8;
+            border-radius: 2px;
         }
 
         /* Hide the old preview panel */
@@ -160,7 +203,7 @@
             font-family: inherit;
         }
         
-        textarea { resize: vertical; min-height: 80px; }
+        textarea { resize: vertical; min-height: 150px; }
 
         /* Status Badge */
         .status-badge {
@@ -205,13 +248,14 @@
     </header>
 
     <div class="main-container">
-        <!-- Left Panel -->
         <div class="review-panel" id="reviewPanel">
-            <div id="loadingStatus">Loading data...</div>
+            <div id="loadingStatus" style="padding: 25px;">Loading data...</div>
             
             <!-- Content will be injected here -->
-            <div id="contentArea" style="display:none;">
+            <div id="contentArea" style="display:none; width: 100%; display: flex;">
                 
+                <!-- Left: Content Column -->
+                <div class="content-column">
                 <!-- 1. Issue Details -->
                 <div class="card">
                     <h2>Issue Details</h2>
@@ -229,23 +273,51 @@
                     </div>
                 </div>
 
-                <!-- 2. Original Description -->
-                <div class="card">
-                    <h2>Original Description</h2>
-                    <div id="displayDescription" class="content-block"></div>
-                </div>
-
-                <!-- 3. AI Analysis -->
+                <!-- 2. AI Analysis -->
                 <div class="card">
                     <h2>🤖 AI Generated Analysis</h2>
-                    <div class="info-item" style="margin-bottom: 10px;">
+                    <div class="info-item" style="margin-bottom: 15px;">
                         <label>AI Identified WCAG</label>
                         <div id="displayAiWcag" style="font-weight:bold;"></div>
                     </div>
-                    <div id="displayAiReport" class="content-block"></div>
+                    <div class="info-item" style="margin-bottom: 15px;">
+                        <label>ACR Compliance Note</label>
+                        <div id="displayAcrNote" class="content-block" style="background: #f0f9ff; padding: 15px; border-left: 3px solid #0284c7;"></div>
+                    </div>
+                    <div class="info-item">
+                        <label>Developer Guidance</label>
+                        <div id="displayDevNote" class="content-block" style="background: #f0fdf4; padding: 15px; border-left: 3px solid #16a34a;"></div>
+                    </div>
                 </div>
 
-                <!-- 4. Validation -->
+                <!-- 3. Thread Analysis -->
+                <div class="card" id="threadAnalysisCard" style="display:none;">
+                    <h2>💬 Issue Thread Analysis</h2>
+                    <div class="info-item" style="margin-bottom: 15px;">
+                        <label>Discussion Journey</label>
+                        <div id="displayJourney" class="content-block" style="background: #fef3c7; padding: 15px; border-left: 3px solid #f59e0b;"></div>
+                    </div>
+                    <div class="info-item" style="margin-bottom: 15px;">
+                        <label>Outstanding TODO Items</label>
+                        <div id="displayTodo" class="content-block" style="background: #fee2e2; padding: 15px; border-left: 3px solid #ef4444;"></div>
+                    </div>
+                    <div class="info-item" style="margin-bottom: 15px;">
+                        <label>Paste-able Status Summary</label>
+                        <div id="displayPasteSummary" class="content-block" style="background: #f3e8ff; padding: 15px; border-left: 3px solid #a855f7; font-family: monospace; font-size: 0.9em;"></div>
+                    </div>
+                    <div class="info-item">
+                        <label>Related Accessibility Resources</label>
+                        <div id="displayResources" class="content-block" style="background: #dbeafe; padding: 15px; border-left: 3px solid #3b82f6;"></div>
+                    </div>
+                </div>
+                </div>
+
+                <!-- Resizer -->
+                <div class="resizer" id="resizer"></div>
+
+                <!-- Right: Validation Column -->
+                <div class="validation-column">
+                <!-- 3. Validation -->
                 <div class="card">
                     <h2>✅ Your Validation</h2>
                     <div class="input-group">
@@ -271,6 +343,7 @@
                         <button id="saveButton" class="save-button" onclick="saveData()">💾 Download Results</button>
                     </div>
                 </div>
+                </div>
 
             </div>
         </div>
@@ -286,6 +359,43 @@
         let currentIndex = 0;
         let sourceWindow = null;
         let isCompanionActive = false;
+
+        // Resizer functionality
+        const resizer = document.getElementById('resizer');
+        const contentColumn = document.querySelector('.content-column');
+        const validationColumn = document.querySelector('.validation-column');
+        let isResizing = false;
+
+        if (resizer) {
+            resizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                
+                const container = document.querySelector('.review-panel');
+                const containerRect = container.getBoundingClientRect();
+                const offsetX = e.clientX - containerRect.left;
+                const percentage = (offsetX / containerRect.width) * 100;
+                
+                // Limit between 30% and 70%
+                if (percentage >= 30 && percentage <= 70) {
+                    contentColumn.style.flex = `1 1 ${percentage}%`;
+                    validationColumn.style.flex = `1 1 ${100 - percentage}%`;
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                }
+            });
+        }
 
         function openCompanionWindow() {
             const row = allData[currentIndex];
@@ -446,14 +556,26 @@
             setText('displayWcag', row["wcag_sc"] || "N/A");
             setText('displayTitle', row["Issue Title"] || row.inputs?.query || "Untitled");
             
-            // Description
-            const desc = row["Description"] || row.inputs?.context || row.original_context || "";
-            document.getElementById('displayDescription').innerHTML = formatReport(desc);
-
-            // AI Report
-            const aiReport = row["acr_note"] || row.ai_generated_statement || row.generated_report || row.inputs?.response || "";
-            document.getElementById('displayAiReport').innerHTML = formatReport(aiReport);
+            // AI Analysis - ACR Note and Developer Note
+            const acrNote = row["acr_note"] || row.ai_generated_statement || "";
+            const devNote = row["dev_note"] || "";
+            document.getElementById('displayAcrNote').innerHTML = formatReport(acrNote);
+            document.getElementById('displayDevNote').innerHTML = formatReport(devNote);
             setText('displayAiWcag', row["ai_wcag"] || "N/A");
+
+            // Thread Analysis - show card if data exists
+            const hasThreadData = row["thread_journey"] || row["thread_todo"] || row["paste_summary"] || row["related_resources"];
+            const threadCard = document.getElementById('threadAnalysisCard');
+            
+            if (hasThreadData) {
+                threadCard.style.display = 'block';
+                document.getElementById('displayJourney').innerHTML = formatReport(row["thread_journey"] || "No thread analysis available");
+                document.getElementById('displayTodo').innerHTML = formatReport(row["thread_todo"] || "No TODO items identified");
+                document.getElementById('displayPasteSummary').innerHTML = formatReport(row["paste_summary"] || "No summary available");
+                document.getElementById('displayResources').innerHTML = formatReport(row["related_resources"] || "No resources identified");
+            } else {
+                threadCard.style.display = 'none';
+            }
 
             // Validation Inputs (Restore state)
             document.getElementById('valScore').value = row.val_score || 5;
