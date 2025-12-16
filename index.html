@@ -463,10 +463,20 @@
 
         async function loadDatasets() {
             try {
+                console.log("Loading datasets...");
                 const response = await fetch('/api/datasets');
+                console.log("Response status:", response.status);
+                
                 if (response.ok) {
                     const files = await response.json();
+                    console.log("Found files:", files);
                     const selector = document.getElementById('datasetSelector');
+                    
+                    if (!selector) {
+                        console.error("Dataset selector not found!");
+                        return;
+                    }
+                    
                     selector.innerHTML = '';
                     
                     if (files.length === 0) {
@@ -490,9 +500,17 @@
                         selector.value = files[0];
                         loadSelectedDataset(files[0]);
                     }
+                } else {
+                    console.error("Failed to load datasets, status:", response.status);
+                    const selector = document.getElementById('datasetSelector');
+                    selector.innerHTML = '<option>Error loading datasets</option>';
                 }
             } catch (e) {
                 console.error("Failed to load datasets", e);
+                const selector = document.getElementById('datasetSelector');
+                if (selector) {
+                    selector.innerHTML = '<option>Error: ' + e.message + '</option>';
+                }
             }
         }
 
