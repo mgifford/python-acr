@@ -107,14 +107,14 @@ python run_acr.py --repo https://github.com/ckeditor/ckeditor5
 ### Using Local AI (Ollama) 🦙
 Run entirely locally to avoid API costs and keep data private:
 ```bash
-python run_acr.py --repo drupal --ai-backend ollama --model gemma3:4b
+python run_acr.py --repo drupal --ai-backend ollama --model gemma2:2b
 ```
 
 ### Limit Processing for Testing 🧪
 Process only the first N issues (useful for testing):
 ```bash
 # Process only first 10 issues
-python run_acr.py --repo drupal --ai-backend ollama --model gemma3:4b --limit 10
+python run_acr.py --repo drupal --ai-backend ollama --model gemma2:2b --limit 10
 ```
 
 ### Custom Tag Scanning (Performance, Sustainability, etc.) 🏷️
@@ -130,7 +130,7 @@ python run_acr.py --repo drupal --tags "performance,sustainability"
 | `--repo` | String | None | Drupal project ID (e.g. `drupal`) or GitHub repo (`owner/repo` or URL). |
 | `--step` | Integer | All | Run a specific step (1, 2, 3, 4, or 5). |
 | `--ai-backend` | String | `gemini` | Choose AI backend: `gemini` (Cloud) or `ollama` (Local). |
-| `--model` | String | None | Specific model name (e.g., `gemma3:4b`, `llama3`). |
+| `--model` | String | None | Specific model name (e.g., `gemma2:2b`, `llama3`, `gpt-oss:20b`). |
 | `--tags` | String | None | Comma-separated list of tags to search (overrides defaults). |
 | `--limit` | Integer | None | Limit number of issues to process (useful for testing). |
 
