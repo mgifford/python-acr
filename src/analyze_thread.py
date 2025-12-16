@@ -165,9 +165,12 @@ def analyze_issue_thread(row, model, url):
         f"#{c['number']} by {c['author']}: {c['content'][:300]}"
         for c in issue_data.get('comments', [])
     ])
-    
     prompt = f"""
-Analyze this accessibility issue thread and provide a structured summary.
+You are an experienced web accessibility professional reviewing an accessibility
+issue thread to assess the validity of the reported barrier, the quality of discussion,
+and the current state of resolution based solely on recorded evidence.
+
+Analyze the following accessibility issue thread and provide a structured, factual summary.
 
 ISSUE: {row['Issue Title']}
 REPORTER: {issue_data.get('reporter_info', 'Unknown')}
@@ -177,44 +180,153 @@ RECENT FILES/PATCHES: {', '.join(issue_data.get('recent_files', []))}
 COMMENT THREAD:
 {comments_text}
 
-ORIGINAL DESCRIPTION: {row['Description']}
+ORIGINAL DESCRIPTION:
+{row['Description']}
 
 CRITICAL INSTRUCTIONS:
-1. DO NOT INVENT OR HALLUCINATE: Only use actual usernames, comment numbers, and events from the thread above. Never create fake users like "Alice", "UserB", or "CKEditor-Dev" unless they appear in the comments.
-2. BE EXPLICIT ABOUT LIMITED DATA: If there are only 1-2 comments, say "minimal discussion" or "only initial report". Don't speculate about what "probably" happened.
-3. NO REDUNDANT LINKS: Do NOT include the original issue URL in LINKS (it's already captured elsewhere in the report).
-4. USE ACTUAL COMMENT NUMBERS: Reference the #number from the COMMENT THREAD above, not invented numbers.
-5. SENTIMENT ACCURACY: Look carefully at WHO is commenting. If 2+ different people engage (commenting, agreeing, proposing solutions), use "Active collaboration" or "Minimal engagement". Only use "Initial report only" if literally just the original reporter posted with no other participants.
-6. LINK TO SPECIFIC COMMENTS: When mentioning a GitHub comment, format as: https://github.com/owner/repo/issues/NUMBER#issuecomment-ID
 
-Provide 5 outputs in this EXACT format:
+1. NO INVENTION OR INFERENCE  
+Use ONLY information explicitly present in the issue title, description, and comment
+thread above. Do not infer intent, outcomes, or internal decisions. Do not invent users,
+events, fixes, or timelines.
 
-TLDR: A high-level executive summary (2-3 sentences) of the issue and its current status. Be honest if status is unknown.
+2. EXPLICIT DATA LIMITS  
+If discussion is limited, state that clearly using phrases such as:
+- "Initial report only"
+- "Minimal discussion"
+- "No evidence of follow-up or resolution"
 
-PROBLEM_STATEMENT: A clear definition of the accessibility barrier, referencing specific WCAG criteria if applicable.
+Do not speculate about what may have happened off-thread.
 
-SENTIMENT: One of: "Active collaboration", "Minimal engagement", "Stalled (no recent activity)", or "Initial report only". Look at participant count: 1 person = "Initial report only", 2+ people = engagement level based on constructive discussion.
+3. COMMENT AND USER ACCURACY  
+Reference ONLY real usernames and comment numbers that appear in the thread.
+Never fabricate placeholders or generic contributors.
 
-TIMELINE: A chronological summary using ONLY actual comment numbers and usernames from the COMMENT THREAD above.
-CRITICAL: Put each timeline entry on its OWN LINE. Do not run them together.
-Format each entry on a new line:
-# 1 johndoe: Reported the issue with reproduction steps.
-# 3 janedoe: Confirmed bug and suggested adding aria-label.
-# 5 johndoe: Tested the fix and confirmed it works.
+4. SENTIMENT BASED ON PARTICIPATION  
+Assess sentiment strictly by observable engagement:
+- One participant only → "Initial report only"
+- Two or more participants with limited interaction → "Minimal engagement"
+- Multiple participants proposing, testing, or refining solutions → "Active collaboration"
+- No recent activity over a significant period → "Stalled (no recent activity)"
 
-If there are fewer than 3 comments, be explicit:
-# 1 reporter: Filed initial bug report. No further discussion.
+5. TIMELINE DISCIPLINE  
+Use actual comment numbers and usernames.
+Each timeline entry MUST be on its own line.
+Do not combine events or summarize multiple comments into one entry.
 
-LINKS: Relevant WCAG docs, MDN pages, or related external issues mentioned in comments. DO NOT include the original issue URL. Format as "- [Title](URL): Brief description"
+6. LINK HYGIENE  
+Do NOT include the original issue URL.
+Only include external references explicitly mentioned or clearly relevant
+to understanding the accessibility barrier (WCAG, MDN, specs, related issues).
 
-Format your response exactly as:
+7. STANDARDS BASELINE  
+- Use WCAG 2.2 Level AA as the accessibility baseline
+- Reference WCAG 2.2 Success Criteria only when supported by the issue description
+- Avoid speculative or weak mappings
+
+8. ISSUE TRACKER SOURCE DETECTION AND FORMATTING
+
+Determine the issue tracker platform based on the issue URL or domain present
+in the data provided.
+
+Supported platforms:
+- GitHub (github.com)
+- Drupal (drupal.org)
+
+Once the platform is identified, ALL comment references, user references, and
+links MUST follow the conventions of that platform.
+
+Do NOT mix formats between platforms.
+
+GITHUB FORMATTING RULES (github.com):
+
+- Comment anchors use the format:
+  https://github.com/{owner}/{repo}/issues/{NUMBER}#issuecomment-{ID}
+
+- User accounts use the format:
+  https://github.com/{username}
+
+- Timeline entries must reference the GitHub username exactly as shown in
+  the comment thread.
+
+- When linking to a specific comment, use the GitHub issuecomment anchor,
+  not a generic issue link.
+
+DRUPAL FORMATTING RULES (drupal.org):
+
+- Comment anchors use the format:
+  https://www.drupal.org/project/{project}/issues/{NUMBER}#comment-{ID}
+
+- User accounts use the format:
+  https://www.drupal.org/u/{username}
+
+- Timeline entries must reference the Drupal username exactly as shown in
+  the issue thread.
+
+- When linking to a specific comment, use the Drupal comment anchor,
+  not the issue page alone.
+
+PLATFORM CONSISTENCY REQUIREMENT:
+
+- If the issue originates from github.com, ALL comment and user links must
+  follow GitHub conventions.
+- If the issue originates from drupal.org, ALL comment and user links must
+  follow Drupal conventions.
+- Never assume GitHub-style usernames or comment IDs for Drupal issues, or
+  vice versa.
+
+UNCERTAIN SOURCE HANDLING:
+
+- If the issue source cannot be confidently determined from the provided data,
+  do NOT generate comment or user links.
+- In that case, reference usernames and comment numbers as plain text only,
+  and explicitly note limited linkability in the TLDR.
+
+
+Provide EXACTLY the following five outputs, in this order and format:
+
+TLDR:
+A concise executive summary (2–3 sentences) describing the accessibility issue
+and its current observable status. If status is unclear, say so explicitly.
+
+PROBLEM_STATEMENT:
+A clear, neutral description of the accessibility barrier affecting users.
+Reference specific WCAG Success Criteria only if justified by the content of
+the issue and comments.
+
+SENTIMENT:
+One of the following values ONLY:
+- Active collaboration
+- Minimal engagement
+- Stalled (no recent activity)
+- Initial report only
+
+TIMELINE:
+A chronological list using ONLY actual comment numbers and usernames.
+Each entry on its own line, for example:
+
+#1 johndoe: Filed the initial accessibility report with reproduction steps.
+#3 janedoe: Confirmed the issue and referenced WCAG 1.1.1.
+#5 johndoe: Tested proposed fix and reported outcome.
+
+If fewer than three comments exist, be explicit:
+
+#1 reporter: Filed initial accessibility report. No further discussion recorded.
+
+LINKS:
+Relevant external references only. Do NOT include the original issue URL.
+Format exactly as:
+
+- [Title](URL): Brief description of relevance
+
+Format your response EXACTLY as follows:
+
 TLDR: ...
 PROBLEM_STATEMENT: ...
 SENTIMENT: ...
 TIMELINE: ...
 LINKS: ...
 """
-    
     try:
         resp = model.generate_content(prompt)
         text = resp.text

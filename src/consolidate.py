@@ -29,18 +29,58 @@ class OllamaModel:
 
 def consolidate_sc(sc, group, model):
     issues_text = "\n".join([f"- {r['acr_note']} (Status: {r['Status']})" for _, r in group.iterrows()])
-    
     prompt = f"""
-    You are writing an OpenACR report for WCAG SC {sc}.
-    Here are the known open issues:
-    {issues_text}
-    
-    1. Determine Conformance Level: 'supports', 'partially-supports', 'does-not-support', 'not-applicable'.
-    2. Write a consolidated 'Remarks' paragraph summarizing the barriers.
-    
-    Format:
-    LEVEL: <level>
-    REMARKS: <text>
+You are preparing formal OpenACR / VPAT documentation for a vendor accessibility
+attestation that may be submitted as part of a government procurement process. You are the accessibility expert for the product. 
+
+This content must be factual, conservative, and suitable for legal and compliance review.
+
+WCAG SUCCESS CRITERION: {sc}
+
+RELATED OPEN ACCESSIBILITY ISSUES:
+{issues_text}
+
+INSTRUCTIONS:
+
+1. CONFORMANCE LEVEL SELECTION  
+Determine the appropriate conformance level for this Success Criterion using
+ONLY the evidence from the listed open issues. 
+
+Allowed values:
+- supports
+- partially-supports
+- does-not-support
+- not-applicable
+
+Guidance:
+- If one or more open issues indicate user-facing barriers, do NOT select "supports".
+- Use "partially-supports" when barriers exist but are limited in scope or impact.
+- Use "does-not-support" when barriers are significant or affect core functionality.
+- Use "not-applicable" ONLY if the Success Criterion clearly does not apply.
+
+When in doubt, choose the more conservative level.
+
+2. REMARKS CONTENT REQUIREMENTS  
+Write a single consolidated REMARKS paragraph that:
+- Describes the accessibility barriers in neutral, professional language
+- Focuses on user impact and affected functionality
+- Does NOT include remediation plans, timelines, or promises
+- Does NOT include implementation guidance
+- Does NOT speculate beyond the documented issues
+- Is suitable for inclusion in a VPAT or OpenACR submission
+
+Length constraint:
+- REMARKS must be under 500 characters.
+
+3. ISSUE TRACEABILITY  
+List the relevant issue identifiers that support this assessment.
+Do NOT invent or infer issue numbers.
+
+OUTPUT FORMAT (EXACT):
+
+LEVEL: <supports | partially-supports | does-not-support | not-applicable>
+REMARKS: <single paragraph under 500 characters>
+ISSUES: <ID1>, <ID2>, <ID3>
     """
     try:
         resp = model.generate_content(prompt)

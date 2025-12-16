@@ -31,21 +31,72 @@ class OllamaModel:
 
 def analyze_issue(row, model):
     prompt = f"""
-    Analyze this accessibility issue:
-    Title: {row['Issue Title']}
-    Description: {row['Description']}
-    
-    Provide 4 specific outputs:
-    1. ACR_NOTE: A professional note for a compliance report describing the barrier.
-    2. DEVELOPER_NOTE: Technical guidance for fixing this, noting if patches exist.
-    3. TITLE_ASSESSMENT: Does the title accurately reflect the issue? (OK/SUGGEST)
-    4. WCAG_ASSESSMENT: The specific WCAG Success Criterion number ONLY (e.g. '1.1.1'). Do not include the name, level, or reasoning in this line.
+You are an experienced web accessibility professional reviewing an issue queue.
+Your role is to identify and clearly describe accessibility barriers, assess whether
+the reported issue is valid and actionable, and provide practical guidance to move
+the issue toward resolution.
 
-    Format response strictly as:
-    ACR_NOTE: ...
-    DEVELOPER_NOTE: ...
-    TITLE_ASSESSMENT: ...
-    WCAG_ASSESSMENT: ...
+Analyze the following accessibility issue:
+
+Title: {row['Issue Title']}
+Description: {row['Description']}
+
+Your goal is to:
+- Clarify the actual accessibility barrier, if one exists
+- Nudge the issue forward with concrete, standards-based guidance
+- Provide developers with clear, minimal, and current technical direction
+- Avoid speculative or non-actionable advice
+
+Provide exactly four outputs:
+
+1. ACR_NOTE  
+A concise, professional note suitable for an accessibility compliance report.
+Describe the user impact and barrier in plain, neutral language. Do not speculate
+beyond the information provided.
+
+2. DEVELOPER_NOTE  
+Actionable technical guidance focused on fixing the issue.  
+Prioritize:
+- Semantic HTML solutions first
+- ARIA only when native semantics are insufficient
+- Established patterns and documented techniques
+
+Note known patches, common fixes, or references to authoritative guidance when relevant.
+Avoid deprecated techniques and unnecessary complexity.
+
+3. TITLE_ASSESSMENT  
+Indicate whether the issue title accurately reflects the described barrier.
+Respond with:
+- OK
+- SUGGEST (if misleading, vague, or incorrect)
+
+4. WCAG_ASSESSMENT  
+Provide the applicable WCAG 2.2 Success Criterion number ONLY (for example: 1.1.1).
+Do not include the criterion name, level, or explanation.
+
+Use the following constraints and references:
+
+- WCAG 2.2 Level AA is the baseline standard
+- Reference WCAG 2.2 Understanding documents for interpretation - https://www.w3.org/WAI/WCAG22/Understanding/
+- Reference WAI-ARIA 1.2 for ARIA usage - https://www.w3.org/TR/wai-aria-1.2/
+- Always prefer semantic HTML over ARIA
+- Avoid suggesting deprecated or outdated technologies
+- Emphasize user impact and accessible, user-friendly design
+
+Implementation priority order:
+1. Semantic HTML structure
+2. Accessible markup and ARIA (only when necessary)
+3. CSS architecture and layering
+4. Responsive layouts using relative units
+5. Progressive enhancement with JavaScript
+6. Accessibility testing and validation
+
+Format the response exactly as follows:
+
+ACR_NOTE: ...
+DEVELOPER_NOTE: ...
+TITLE_ASSESSMENT: ...
+WCAG_ASSESSMENT: ...
     """
     try:
         resp = model.generate_content(prompt)
