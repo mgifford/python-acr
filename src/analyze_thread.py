@@ -149,7 +149,7 @@ def analyze_issue_thread(row, model, url):
     ])
     
     prompt = f"""
-Analyze this Drupal accessibility issue thread and provide:
+Analyze this accessibility issue thread and provide:
 
 ISSUE: {row['Issue Title']}
 REPORTER: {issue_data.get('reporter_info', 'Unknown')}
@@ -163,11 +163,11 @@ ORIGINAL DESCRIPTION: {row['Description']}
 
 Provide 4 outputs in this EXACT format:
 
-JOURNEY: A chronological summary of the discussion (who said what, key decisions, concerns raised). Keep it concise like: "#3 jannakha reported, #4 smustgrave needed failing test, #7 mgifford suggested upstream issue..."
+JOURNEY: A chronological summary of the discussion (who said what, key decisions, concerns raised). Keep it concise like: "#1 UserA reported the issue, #2 UserB confirmed it, #3 UserC suggested a fix..."
 
-TODO: List of specific outstanding tasks needed to resolve this issue (e.g., "Needs screen reader testing", "Awaiting CKEditor5 upstream fix")
+TODO: List of specific outstanding tasks needed to resolve this issue (e.g., "Needs screen reader testing", "Awaiting upstream fix")
 
-PASTE_SUMMARY: A 2-3 sentence summary that could be pasted into the issue to update status (e.g., "Current status: Patch available in #31 but needs screen reader testing. Waiting on CKEditor5 upstream resolution from #26.")
+PASTE_SUMMARY: A 2-3 sentence summary that could be pasted into the issue to update status (e.g., "Current status: Patch available but needs testing. Waiting on upstream resolution.")
 
 RESOURCES: 3-5 relevant W3C or accessibility expert resources related to the specific accessibility barrier discussed (WCAG success criteria, ARIA authoring practices, WebAIM articles, Deque blogs, etc.). Format as: "- [Title](URL): Brief description"
 

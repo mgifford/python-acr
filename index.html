@@ -218,6 +218,58 @@
         .status-badge.needs-review { background: #fef3c7; color: #92400e; }
         .status-badge.fixed { background: #dcfce7; color: #166534; }
 
+        /* --- Timeline & List Formatting --- */
+        .timeline {
+            position: relative;
+            padding-left: 20px;
+            border-left: 2px solid #e5e7eb;
+            margin-top: 10px;
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 15px;
+            padding-left: 15px;
+        }
+        .timeline-marker {
+            position: absolute;
+            left: -26px;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #3b82f6;
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+        .timeline-content {
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .timeline-id {
+            font-weight: bold;
+            color: #2563eb;
+            margin-right: 5px;
+        }
+        
+        /* Markdown Lists */
+        .md-list {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .md-list li {
+            margin-bottom: 5px;
+        }
+
+        /* Updated Header for Info Items */
+        .info-item h3 {
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: bold;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
     </style>
 </head>
 <body onload="loadDataAutomatically()">
@@ -295,19 +347,19 @@
                 <div class="card" id="threadAnalysisCard" style="display:none;">
                     <h2>💬 Issue Thread Analysis</h2>
                     <div class="info-item" style="margin-bottom: 15px;">
-                        <label>Discussion Journey</label>
-                        <div id="displayJourney" class="content-block" style="background: #fef3c7; padding: 15px; border-left: 3px solid #f59e0b;"></div>
+                        <h3>Discussion Journey</h3>
+                        <div id="displayJourney" class="content-block" style="background: #fef3c7; padding: 15px; border-left: 3px solid #f59e0b; white-space: normal;"></div>
                     </div>
                     <div class="info-item" style="margin-bottom: 15px;">
-                        <label>Outstanding TODO Items</label>
+                        <h3>Outstanding TODO Items</h3>
                         <div id="displayTodo" class="content-block" style="background: #fee2e2; padding: 15px; border-left: 3px solid #ef4444;"></div>
                     </div>
                     <div class="info-item" style="margin-bottom: 15px;">
-                        <label>Paste-able Status Summary</label>
+                        <h3>Paste-able Status Summary</h3>
                         <div id="displayPasteSummary" class="content-block" style="background: #f3e8ff; padding: 15px; border-left: 3px solid #a855f7; font-family: monospace; font-size: 0.9em;"></div>
                     </div>
                     <div class="info-item">
-                        <label>Related Accessibility Resources</label>
+                        <h3>Related Accessibility Resources</h3>
                         <div id="displayResources" class="content-block" style="background: #dbeafe; padding: 15px; border-left: 3px solid #3b82f6;"></div>
                     </div>
                 </div>
@@ -608,10 +660,10 @@
             
             if (hasThreadData) {
                 threadCard.style.display = 'block';
-                document.getElementById('displayJourney').innerHTML = formatReport(row["thread_journey"] || "No thread analysis available");
-                document.getElementById('displayTodo').innerHTML = formatReport(row["thread_todo"] || "No TODO items identified");
-                document.getElementById('displayPasteSummary').innerHTML = formatReport(row["paste_summary"] || "No summary available");
-                document.getElementById('displayResources').innerHTML = formatReport(row["related_resources"] || "No resources identified");
+                document.getElementById('displayJourney').innerHTML = renderJourney(row["thread_journey"], url);
+                document.getElementById('displayTodo').innerHTML = renderList(row["thread_todo"]);
+                document.getElementById('displayPasteSummary').innerHTML = formatReport(row["paste_summary"]);
+                document.getElementById('displayResources').innerHTML = renderList(row["related_resources"]);
             } else {
                 threadCard.style.display = 'none';
             }
@@ -666,6 +718,83 @@
             formatted = formatted.replace(/^[\*\-]\s(.*)$/gm, '• $1');
             formatted = formatted.replace(/\n/g, '<br>');
             return formatted;
+        }
+
+        function renderJourney(text, issueUrl) {
+            if (!text) return "No thread analysis available";
+            let html = escapeHtml(text);
+            
+            // Linkify URLs
+            html = html.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: #2563eb; text-decoration: underline;">$1</a>');
+            
+            // Split by issue numbers (#123)
+            const parts = html.split(/(?=#\d+)/);
+            
+            if (parts.length > 1) {
+                return '<div class="journey-list">' + parts.map(p => {
+                    p = p.trim();
+                    if (!p) return '';
+                    
+                    // Extract ID
+                    const match = p.match(/^(#\d+)(.*)/s);
+                    if (match) {
+                        const id = match[1];
+                        const content = match[2].trim();
+                        // Construct link for the ID
+                        // If issueUrl exists, append the ID as fragment (works for Drupal, maybe GitHub if ID matches)
+                        // For GitHub, comment anchors are usually #issuecomment-ID, but we don't have that mapping here.
+                        // We'll just use the ID as fragment for now.
+                        const linkHref = issueUrl ? `${issueUrl}${id}` : '#';
+                        
+                        return `<div class="journey-item" style="margin-bottom: 2px;"><a href="${linkHref}" target="drupalCompanion" class="journey-id" style="font-weight: bold; color: #2563eb; margin-right: 5px; text-decoration: none;">${id}</a><span class="journey-content">${content}</span></div>`;
+                    }
+                    return `<div class="journey-item" style="margin-bottom: 2px;">${p}</div>`;
+                }).join('') + '</div>';
+            }
+            return html;
+        }
+
+        function renderList(text) {
+            if (!text) return "";
+            let html = escapeHtml(text);
+            
+            // Links
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: #2563eb; text-decoration: underline;">$1</a>');
+            
+            // Try to detect list items
+            // If newlines exist
+            if (html.includes('\n')) {
+                const lines = html.split('\n');
+                const listItems = lines.map(line => {
+                    line = line.trim();
+                    if (line.match(/^[\*\-]\s/)) {
+                        return `<li>${line.substring(2)}</li>`;
+                    }
+                    return line ? `<p>${line}</p>` : '';
+                }).join('');
+                
+                if (listItems.includes('<li>')) {
+                    return `<ul style="padding-left: 20px; margin: 0;">${listItems}</ul>`;
+                }
+                return listItems;
+            }
+            
+            // If single line with bullets
+            // "Item 1 * Item 2 * Item 3"
+            // Split by " * " or " - "
+            // But first item might start with "* "
+            if (html.match(/(?:^|\s)[\*\-]\s/)) {
+                 // This is tricky regex to split but keep content.
+                 // Let's just replace " * " with "</li><li>"
+                 let list = html;
+                 if (list.startsWith('* ') || list.startsWith('- ')) {
+                     list = list.substring(2);
+                 }
+                 list = '<li>' + list.replace(/\s+[\*\-]\s+/g, '</li><li>') + '</li>';
+                 return `<ul style="padding-left: 20px; margin: 0;">${list}</ul>`;
+            }
+
+            return html;
         }
 
         function escapeHtml(text) {

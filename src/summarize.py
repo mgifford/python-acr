@@ -30,7 +30,7 @@ class OllamaModel:
 
 def analyze_issue(row, model):
     prompt = f"""
-    Analyze this Drupal accessibility issue:
+    Analyze this accessibility issue:
     Title: {row['Issue Title']}
     Description: {row['Description']}
     
