@@ -240,7 +240,10 @@ RESOURCES: ...
         return journey, todo, paste, resources
         
     except Exception as e:
-        print(f"Error analyzing thread: {e}")
+        # Clean up verbose error messages
+        error_msg = str(e).split('\n')[0]
+        if len(error_msg) > 200: error_msg = error_msg[:200] + "..."
+        print(f"Error analyzing thread: {error_msg}")
         return "", "", "", ""
 
 def run(results_dir, ai_config):

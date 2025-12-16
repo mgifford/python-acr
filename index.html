@@ -715,7 +715,7 @@
         function formatReport(text) {
             if (!text) return "";
             let formatted = escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            formatted = formatted.replace(/^[\*\-]\s(.*)$/gm, '• $1');
+            formatted = formatted.replace(/^[\*\-]\s+(.*)$/gm, '• $1');
             formatted = formatted.replace(/\n/g, '<br>');
             return formatted;
         }
@@ -767,8 +767,10 @@
                 const lines = html.split('\n');
                 const listItems = lines.map(line => {
                     line = line.trim();
-                    if (line.match(/^[\*\-]\s/)) {
-                        return `<li>${line.substring(2)}</li>`;
+                    // Match bullet followed by whitespace
+                    const match = line.match(/^[\*\-]\s+(.*)/);
+                    if (match) {
+                        return `<li>${match[1].trim()}</li>`;
                     }
                     return line ? `<p>${line}</p>` : '';
                 }).join('');
@@ -781,17 +783,16 @@
             
             // If single line with bullets
             // "Item 1 * Item 2 * Item 3"
-            // Split by " * " or " - "
-            // But first item might start with "* "
             if (html.match(/(?:^|\s)[\*\-]\s/)) {
-                 // This is tricky regex to split but keep content.
-                 // Let's just replace " * " with "</li><li>"
                  let list = html;
-                 if (list.startsWith('* ') || list.startsWith('- ')) {
-                     list = list.substring(2);
-                 }
-                 list = '<li>' + list.replace(/\s+[\*\-]\s+/g, '</li><li>') + '</li>';
-                 return `<ul style="padding-left: 20px; margin: 0;">${list}</ul>`;
+                 // Remove leading bullet if present
+                 list = list.replace(/^[\*\-]\s+/, '');
+                 
+                 // Split by bullet separators and wrap
+                 const items = list.split(/\s+[\*\-]\s+/);
+                 const listContent = items.map(i => `<li>${i.trim()}</li>`).join('');
+                 
+                 return `<ul style="padding-left: 20px; margin: 0;">${listContent}</ul>`;
             }
 
             return html;

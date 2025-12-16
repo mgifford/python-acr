@@ -65,7 +65,10 @@ def analyze_issue(row, model):
             
         return wcag, acr_note, dev_note
     except Exception as e:
-        print(f"Error analyzing issue: {e}")
+        # Clean up verbose error messages (especially from Gemini)
+        error_msg = str(e).split('\n')[0]
+        if len(error_msg) > 200: error_msg = error_msg[:200] + "..."
+        print(f"Error analyzing issue: {error_msg}")
         return "Error", "Error", "Error"
 
 def run(results_dir, ai_config):
