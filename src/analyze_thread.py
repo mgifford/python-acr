@@ -179,21 +179,33 @@ COMMENT THREAD:
 
 ORIGINAL DESCRIPTION: {row['Description']}
 
+CRITICAL INSTRUCTIONS:
+1. DO NOT INVENT OR HALLUCINATE: Only use actual usernames, comment numbers, and events from the thread above. Never create fake users like "Alice", "UserB", or "CKEditor-Dev" unless they appear in the comments.
+2. BE EXPLICIT ABOUT LIMITED DATA: If there are only 1-2 comments, say "minimal discussion" or "only initial report". Don't speculate about what "probably" happened.
+3. NO REDUNDANT LINKS: Do NOT include the original issue URL in LINKS (it's already captured elsewhere in the report).
+4. USE ACTUAL COMMENT NUMBERS: Reference the #number from the COMMENT THREAD above, not invented numbers.
+5. SENTIMENT ACCURACY: Look carefully at WHO is commenting. If 2+ different people engage (commenting, agreeing, proposing solutions), use "Active collaboration" or "Minimal engagement". Only use "Initial report only" if literally just the original reporter posted with no other participants.
+6. LINK TO SPECIFIC COMMENTS: When mentioning a GitHub comment, format as: https://github.com/owner/repo/issues/NUMBER#issuecomment-ID
+
 Provide 5 outputs in this EXACT format:
 
-TLDR: A high-level executive summary (2-3 sentences) of the issue and its current status.
+TLDR: A high-level executive summary (2-3 sentences) of the issue and its current status. Be honest if status is unknown.
 
 PROBLEM_STATEMENT: A clear definition of the accessibility barrier, referencing specific WCAG criteria if applicable.
 
-SENTIMENT: A brief assessment of the community sentiment (e.g., "Collaborative", "Heated", "Stalled") and why.
+SENTIMENT: One of: "Active collaboration", "Minimal engagement", "Stalled (no recent activity)", or "Initial report only". Look at participant count: 1 person = "Initial report only", 2+ people = engagement level based on constructive discussion.
 
-TIMELINE: A chronological summary of the discussion. Use the format "#<number> <User> <action>" for key events.
-Example:
-#1 UserA reported the issue.
-#3 UserB confirmed reproduction.
-#5 UserC proposed a patch.
+TIMELINE: A chronological summary using ONLY actual comment numbers and usernames from the COMMENT THREAD above.
+CRITICAL: Put each timeline entry on its OWN LINE. Do not run them together.
+Format each entry on a new line:
+# 1 johndoe: Reported the issue with reproduction steps.
+# 3 janedoe: Confirmed bug and suggested adding aria-label.
+# 5 johndoe: Tested the fix and confirmed it works.
 
-LINKS: Relevant resources, documentation, or related issues mentioned. Format as "- [Title](URL): Description".
+If there are fewer than 3 comments, be explicit:
+# 1 reporter: Filed initial bug report. No further discussion.
+
+LINKS: Relevant WCAG docs, MDN pages, or related external issues mentioned in comments. DO NOT include the original issue URL. Format as "- [Title](URL): Brief description"
 
 Format your response exactly as:
 TLDR: ...

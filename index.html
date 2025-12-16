@@ -659,8 +659,25 @@
             // AI Analysis - ACR Note and Developer Note
             const acrNote = row["acr_note"] || row.ai_generated_statement || "";
             const devNote = row["dev_note"] || "";
-            document.getElementById('displayAcrNote').innerHTML = formatReport(acrNote);
-            document.getElementById('displayDevNote').innerHTML = formatReport(devNote);
+            
+            // Show/hide ACR Note based on content
+            const acrNoteContainer = document.getElementById('displayAcrNote').parentElement;
+            if (acrNote.trim()) {
+                acrNoteContainer.style.display = 'block';
+                document.getElementById('displayAcrNote').innerHTML = formatReport(acrNote);
+            } else {
+                acrNoteContainer.style.display = 'none';
+            }
+            
+            // Show/hide Developer Note based on content
+            const devNoteContainer = document.getElementById('displayDevNote').parentElement;
+            if (devNote.trim()) {
+                devNoteContainer.style.display = 'block';
+                document.getElementById('displayDevNote').innerHTML = formatReport(devNote);
+            } else {
+                devNoteContainer.style.display = 'none';
+            }
+            
             setText('displayAiWcag', row["ai_wcag"] || "N/A");
 
             // Thread Analysis - show card if data exists
@@ -670,20 +687,69 @@
             if (hasThreadData) {
                 threadCard.style.display = 'block';
                 
-                // Handle new format
+                // Handle new format - show/hide individual sections based on content
                 if (row["thread_tldr"]) {
-                    document.getElementById('displayTldr').innerHTML = formatReport(row["thread_tldr"]);
-                    document.getElementById('displayProblem').innerHTML = formatReport(row["thread_problem"]);
-                    document.getElementById('displaySentiment').innerHTML = formatReport(row["thread_sentiment"]);
-                    document.getElementById('displayTimeline').innerHTML = renderJourney(row["thread_timeline"], url);
-                    document.getElementById('displayLinks').innerHTML = renderList(row["thread_links"]);
+                    // TLDR
+                    const tldr = row["thread_tldr"] || "";
+                    const tldrContainer = document.getElementById('displayTldr').parentElement;
+                    if (tldr.trim()) {
+                        tldrContainer.style.display = 'block';
+                        document.getElementById('displayTldr').innerHTML = formatReport(tldr);
+                    } else {
+                        tldrContainer.style.display = 'none';
+                    }
+                    
+                    // Problem Statement
+                    const problem = row["thread_problem"] || "";
+                    const problemContainer = document.getElementById('displayProblem').parentElement;
+                    if (problem.trim()) {
+                        problemContainer.style.display = 'block';
+                        document.getElementById('displayProblem').innerHTML = formatReport(problem);
+                    } else {
+                        problemContainer.style.display = 'none';
+                    }
+                    
+                    // Sentiment
+                    const sentiment = row["thread_sentiment"] || "";
+                    const sentimentContainer = document.getElementById('displaySentiment').parentElement;
+                    if (sentiment.trim()) {
+                        sentimentContainer.style.display = 'block';
+                        document.getElementById('displaySentiment').innerHTML = formatReport(sentiment);
+                    } else {
+                        sentimentContainer.style.display = 'none';
+                    }
+                    
+                    // Timeline
+                    const timeline = row["thread_timeline"] || "";
+                    const timelineContainer = document.getElementById('displayTimeline').parentElement;
+                    if (timeline.trim()) {
+                        timelineContainer.style.display = 'block';
+                        document.getElementById('displayTimeline').innerHTML = renderJourney(timeline, url);
+                    } else {
+                        timelineContainer.style.display = 'none';
+                    }
+                    
+                    // Links
+                    const links = row["thread_links"] || "";
+                    const linksContainer = document.getElementById('displayLinks').parentElement;
+                    if (links.trim()) {
+                        linksContainer.style.display = 'block';
+                        document.getElementById('displayLinks').innerHTML = renderList(links);
+                    } else {
+                        linksContainer.style.display = 'none';
+                    }
                 } 
                 // Fallback for old format (mapping to new fields roughly)
                 else {
+                    document.getElementById('displayTldr').parentElement.style.display = 'block';
                     document.getElementById('displayTldr').innerHTML = formatReport(row["paste_summary"]);
+                    document.getElementById('displayProblem').parentElement.style.display = 'block';
                     document.getElementById('displayProblem').innerHTML = "<em>(Data from older scan format)</em>";
+                    document.getElementById('displaySentiment').parentElement.style.display = 'block';
                     document.getElementById('displaySentiment').innerHTML = "<em>(Data from older scan format)</em>";
+                    document.getElementById('displayTimeline').parentElement.style.display = 'block';
                     document.getElementById('displayTimeline').innerHTML = renderJourney(row["thread_journey"], url);
+                    document.getElementById('displayLinks').parentElement.style.display = 'block';
                     document.getElementById('displayLinks').innerHTML = renderList(row["related_resources"]);
                 }
             } else {
@@ -736,10 +802,52 @@
 
         function formatReport(text) {
             if (!text) return "";
-            let formatted = escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            formatted = formatted.replace(/^[\*\-]\s+(.*)$/gm, '• $1');
-            formatted = formatted.replace(/\n/g, '<br>');
-            return formatted;
+            
+            // Escape HTML first
+            let formatted = escapeHtml(text);
+            
+            // Convert **bold** to <strong>
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Convert Markdown lists to HTML <ul>
+            // Split by paragraphs (double newline or list items)
+            const lines = formatted.split('\n');
+            let inList = false;
+            let htmlLines = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const trimmedLine = line.trim();
+                
+                // Check if this is a list item (starts with * or -)
+                if (/^[\*\-]\s+/.test(trimmedLine)) {
+                    if (!inList) {
+                        htmlLines.push('<ul style="margin: 10px 0; padding-left: 20px; list-style-type: disc;">');
+                        inList = true;
+                    }
+                    // Remove the * or - and wrap in <li>
+                    const content = trimmedLine.replace(/^[\*\-]\s+/, '');
+                    htmlLines.push(`<li style="margin-bottom: 8px;">${content}</li>`);
+                } else {
+                    // Not a list item
+                    if (inList) {
+                        htmlLines.push('</ul>');
+                        inList = false;
+                    }
+                    if (trimmedLine) {
+                        htmlLines.push(line);
+                    } else {
+                        htmlLines.push('<br>');
+                    }
+                }
+            }
+            
+            // Close list if still open
+            if (inList) {
+                htmlLines.push('</ul>');
+            }
+            
+            return htmlLines.join('\n');
         }
 
         function renderJourney(text, issueUrl) {
