@@ -321,13 +321,16 @@ def run(results_dir, ai_config, limit=None):
             df.at[idx, 'paste_summary'] = paste
             df.at[idx, 'related_resources'] = resources
             
-            # Display the generated content
-            print(f"\n{'='*80}")
-            print(f"📋 JOURNEY: {journey[:200]}..." if len(journey) > 200 else f"📋 JOURNEY: {journey}")
-            print(f"\n✅ TODO: {todo[:150]}..." if len(todo) > 150 else f"✅ TODO: {todo}")
-            print(f"\n📝 PASTE SUMMARY: {paste}")
-            print(f"\n🔗 RESOURCES: {resources[:200]}..." if len(resources) > 200 else f"🔗 RESOURCES: {resources}")
-            print(f"{'='*80}\n")
+            # Only display if we got actual content
+            if journey or todo or paste or resources:
+                print(f"\n{'='*80}")
+                print(f"📋 JOURNEY: {journey[:200]}..." if len(journey) > 200 else f"📋 JOURNEY: {journey}")
+                print(f"\n✅ TODO: {todo[:150]}..." if len(todo) > 150 else f"✅ TODO: {todo}")
+                print(f"\n📝 PASTE SUMMARY: {paste}")
+                print(f"\n🔗 RESOURCES: {resources[:200]}..." if len(resources) > 200 else f"🔗 RESOURCES: {resources}")
+                print(f"{'='*80}\n")
+            else:
+                print(f"⚠️  No analysis generated (issue may have no comments or scraping failed)\n")
             
             # Save progress incrementally
             if (idx + 1) % 10 == 0:
@@ -338,7 +341,7 @@ def run(results_dir, ai_config, limit=None):
             time.sleep(2)
             
         except Exception as e:
-            print(f"  Error analyzing issue: {e}")
+            print(f"❌ Error analyzing issue: {e}\n")
             continue
     
     df.to_csv(outfile, index=False)
