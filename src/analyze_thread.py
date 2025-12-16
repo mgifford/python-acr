@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import sys
 import time
 import requests
 from bs4 import BeautifulSoup
@@ -240,8 +241,16 @@ RESOURCES: ...
         return journey, todo, paste, resources
         
     except Exception as e:
+        error_str = str(e)
+        # Check for critical quota/rate limit errors
+        if "429" in error_str or "quota" in error_str.lower():
+            print(f"\nCRITICAL ERROR: API Quota Exceeded or Rate Limit Hit.")
+            print(f"Details: {error_str.splitlines()[0]}")
+            print("Exiting gracefully to prevent further errors.")
+            sys.exit(1)
+
         # Clean up verbose error messages
-        error_msg = str(e).split('\n')[0]
+        error_msg = error_str.split('\n')[0]
         if len(error_msg) > 200: error_msg = error_msg[:200] + "..."
         print(f"Error analyzing thread: {error_msg}")
         return "", "", "", ""
