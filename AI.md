@@ -33,7 +33,7 @@ WCAG_ASSESSMENT: ...
 
 **Prompt Template:**
 ```text
-Analyze this accessibility issue thread and provide:
+Analyze this accessibility issue thread and provide a structured summary.
 
 ISSUE: {row['Issue Title']}
 REPORTER: {issue_data.get('reporter_info', 'Unknown')}
@@ -45,21 +45,28 @@ COMMENT THREAD:
 
 ORIGINAL DESCRIPTION: {row['Description']}
 
-Provide 4 outputs in this EXACT format:
+Provide 5 outputs in this EXACT format:
 
-JOURNEY: A chronological summary of the discussion (who said what, key decisions, concerns raised). Keep it concise like: "#1 UserA reported the issue, #2 UserB confirmed it, #3 UserC suggested a fix..."
+TLDR: A high-level executive summary (2-3 sentences) of the issue and its current status.
 
-TODO: List of specific outstanding tasks needed to resolve this issue (e.g., "Needs screen reader testing", "Awaiting upstream fix")
+PROBLEM_STATEMENT: A clear definition of the accessibility barrier, referencing specific WCAG criteria if applicable.
 
-PASTE_SUMMARY: A 2-3 sentence summary that could be pasted into the issue to update status (e.g., "Current status: Patch available but needs testing. Waiting on upstream resolution.")
+SENTIMENT: A brief assessment of the community sentiment (e.g., "Collaborative", "Heated", "Stalled") and why.
 
-RESOURCES: 3-5 relevant W3C or accessibility expert resources related to the specific accessibility barrier discussed (WCAG success criteria, ARIA authoring practices, WebAIM articles, Deque blogs, etc.). Format as: "- [Title](URL): Brief description"
+TIMELINE: A chronological summary of the discussion. Use the format "#<number> <User> <action>" for key events.
+Example:
+#1 UserA reported the issue.
+#3 UserB confirmed reproduction.
+#5 UserC proposed a patch.
+
+LINKS: Relevant resources, documentation, or related issues mentioned. Format as "- [Title](URL): Description".
 
 Format your response exactly as:
-JOURNEY: ...
-TODO: ...
-PASTE_SUMMARY: ...
-RESOURCES: ...
+TLDR: ...
+PROBLEM_STATEMENT: ...
+SENTIMENT: ...
+TIMELINE: ...
+LINKS: ...
 ```
 
 ---

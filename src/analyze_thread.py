@@ -32,7 +32,7 @@ class OllamaModel:
             raise e
 
 def fetch_github_thread(url):
-    """Fetch GitHub issue comments using API."""
+    """Fetch GitHub issue comments using API with pagination."""
     try:
         # Parse URL: https://github.com/owner/repo/issues/number
         parts = url.replace("https://github.com/", "").split("/")
@@ -53,26 +53,43 @@ def fetch_github_thread(url):
         if token:
             headers["Authorization"] = f"token {token}"
             
-        response = requests.get(api_url, headers=headers, timeout=30)
-        if response.status_code != 200:
-            print(f"Error fetching GitHub comments: {response.status_code}")
-            return None
+        all_comments = []
+        page = 1
+        per_page = 100
+        
+        while True:
+            params = {'page': page, 'per_page': per_page}
+            response = requests.get(api_url, headers=headers, params=params, timeout=30)
             
-        comments_data = response.json()
+            if response.status_code != 200:
+                print(f"Error fetching GitHub comments: {response.status_code}")
+                break
+                
+            comments_data = response.json()
+            if not comments_data:
+                break
+                
+            for idx, comment in enumerate(comments_data):
+                # Calculate global index (1-based)
+                global_idx = (page - 1) * per_page + idx + 1
+                all_comments.append({
+                    'number': str(global_idx), # Use sequential number for readability
+                    'original_id': str(comment['id']),
+                    'author': comment['user']['login'],
+                    'content': comment['body'][:1000] if comment['body'] else ""
+                })
+            
+            if len(comments_data) < per_page:
+                break
+                
+            page += 1
         
         metadata = {
             'reporter_info': f"GitHub Issue #{issue_number}",
             'followers': "N/A",
             'recent_files': [], # GitHub attachments are harder to list simply
-            'comments': []
+            'comments': all_comments
         }
-        
-        for comment in comments_data:
-            metadata['comments'].append({
-                'number': str(comment['id']),
-                'author': comment['user']['login'],
-                'content': comment['body'][:500] if comment['body'] else ""
-            })
             
         return metadata
 
@@ -111,16 +128,16 @@ def scrape_drupal_issue(url):
         # Comments - extract comment number, author, and text
         comments = []
         comment_divs = soup.find_all('div', class_='comment')
-        for comment in comment_divs[:50]:  # Limit to 50 comments for token management
+        for comment in comment_divs[:200]:  # Increased limit to 200
             comment_num = comment.find('a', class_='permalink')
             author = comment.find('span', class_='username')
             content = comment.find('div', class_='content')
             
             if comment_num and author and content:
                 comments.append({
-                    'number': comment_num.get_text(strip=True),
+                    'number': comment_num.get_text(strip=True).replace('#', ''),
                     'author': author.get_text(strip=True),
-                    'content': content.get_text(strip=True)[:500]  # Truncate long comments
+                    'content': content.get_text(strip=True)[:1000]  # Increased truncation limit
                 })
         
         metadata['comments'] = comments
@@ -150,7 +167,7 @@ def analyze_issue_thread(row, model, url):
     ])
     
     prompt = f"""
-Analyze this accessibility issue thread and provide:
+Analyze this accessibility issue thread and provide a structured summary.
 
 ISSUE: {row['Issue Title']}
 REPORTER: {issue_data.get('reporter_info', 'Unknown')}
@@ -162,31 +179,39 @@ COMMENT THREAD:
 
 ORIGINAL DESCRIPTION: {row['Description']}
 
-Provide 4 outputs in this EXACT format:
+Provide 5 outputs in this EXACT format:
 
-JOURNEY: A chronological summary of the discussion (who said what, key decisions, concerns raised). Keep it concise like: "#1 UserA reported the issue, #2 UserB confirmed it, #3 UserC suggested a fix..."
+TLDR: A high-level executive summary (2-3 sentences) of the issue and its current status.
 
-TODO: List of specific outstanding tasks needed to resolve this issue (e.g., "Needs screen reader testing", "Awaiting upstream fix")
+PROBLEM_STATEMENT: A clear definition of the accessibility barrier, referencing specific WCAG criteria if applicable.
 
-PASTE_SUMMARY: A 2-3 sentence summary that could be pasted into the issue to update status (e.g., "Current status: Patch available but needs testing. Waiting on upstream resolution.")
+SENTIMENT: A brief assessment of the community sentiment (e.g., "Collaborative", "Heated", "Stalled") and why.
 
-RESOURCES: 3-5 relevant W3C or accessibility expert resources related to the specific accessibility barrier discussed (WCAG success criteria, ARIA authoring practices, WebAIM articles, Deque blogs, etc.). Format as: "- [Title](URL): Brief description"
+TIMELINE: A chronological summary of the discussion. Use the format "#<number> <User> <action>" for key events.
+Example:
+#1 UserA reported the issue.
+#3 UserB confirmed reproduction.
+#5 UserC proposed a patch.
+
+LINKS: Relevant resources, documentation, or related issues mentioned. Format as "- [Title](URL): Description".
 
 Format your response exactly as:
-JOURNEY: ...
-TODO: ...
-PASTE_SUMMARY: ...
-RESOURCES: ...
+TLDR: ...
+PROBLEM_STATEMENT: ...
+SENTIMENT: ...
+TIMELINE: ...
+LINKS: ...
 """
     
     try:
         resp = model.generate_content(prompt)
         text = resp.text
         
-        journey = ""
-        todo = ""
-        paste = ""
-        resources = ""
+        tldr = ""
+        problem = ""
+        sentiment = ""
+        timeline = ""
+        links = ""
         
         # Parse response
         lines = text.split('\n')
@@ -194,51 +219,51 @@ RESOURCES: ...
         section_content = []
         
         for line in lines:
-            if line.startswith('JOURNEY:'):
+            if line.startswith('TLDR:'):
                 if current_section and section_content:
                     # Save previous section
                     content = ' '.join(section_content).strip()
-                    if current_section == 'JOURNEY':
-                        journey = content
-                    elif current_section == 'TODO':
-                        todo = content
-                    elif current_section == 'PASTE_SUMMARY':
-                        paste = content
-                    elif current_section == 'RESOURCES':
-                        resources = content
-                current_section = 'JOURNEY'
-                section_content = [line.replace('JOURNEY:', '').strip()]
-            elif line.startswith('TODO:'):
+                    if current_section == 'TLDR': tldr = content
+                    elif current_section == 'PROBLEM_STATEMENT': problem = content
+                    elif current_section == 'SENTIMENT': sentiment = content
+                    elif current_section == 'TIMELINE': timeline = content
+                    elif current_section == 'LINKS': links = content
+                current_section = 'TLDR'
+                section_content = [line.replace('TLDR:', '').strip()]
+            elif line.startswith('PROBLEM_STATEMENT:'):
                 if current_section and section_content:
                     content = ' '.join(section_content).strip()
-                    if current_section == 'JOURNEY':
-                        journey = content
-                current_section = 'TODO'
-                section_content = [line.replace('TODO:', '').strip()]
-            elif line.startswith('PASTE_SUMMARY:'):
+                    if current_section == 'TLDR': tldr = content
+                current_section = 'PROBLEM_STATEMENT'
+                section_content = [line.replace('PROBLEM_STATEMENT:', '').strip()]
+            elif line.startswith('SENTIMENT:'):
                 if current_section and section_content:
                     content = ' '.join(section_content).strip()
-                    if current_section == 'TODO':
-                        todo = content
-                current_section = 'PASTE_SUMMARY'
-                section_content = [line.replace('PASTE_SUMMARY:', '').strip()]
-            elif line.startswith('RESOURCES:'):
+                    if current_section == 'PROBLEM_STATEMENT': problem = content
+                current_section = 'SENTIMENT'
+                section_content = [line.replace('SENTIMENT:', '').strip()]
+            elif line.startswith('TIMELINE:'):
                 if current_section and section_content:
                     content = ' '.join(section_content).strip()
-                    if current_section == 'PASTE_SUMMARY':
-                        paste = content
-                current_section = 'RESOURCES'
-                section_content = [line.replace('RESOURCES:', '').strip()]
+                    if current_section == 'SENTIMENT': sentiment = content
+                current_section = 'TIMELINE'
+                section_content = [line.replace('TIMELINE:', '').strip()]
+            elif line.startswith('LINKS:'):
+                if current_section and section_content:
+                    content = ' '.join(section_content).strip()
+                    if current_section == 'TIMELINE': timeline = content
+                current_section = 'LINKS'
+                section_content = [line.replace('LINKS:', '').strip()]
             elif current_section and line.strip():
                 section_content.append(line.strip())
         
         # Save last section
         if current_section and section_content:
             content = ' '.join(section_content).strip()
-            if current_section == 'RESOURCES':
-                resources = content
+            if current_section == 'LINKS':
+                links = content
         
-        return journey, todo, paste, resources
+        return tldr, problem, sentiment, timeline, links
         
     except Exception as e:
         error_str = str(e)
@@ -272,7 +297,7 @@ def run(results_dir, ai_config, limit=None):
         df = df.head(limit)
     
     # Ensure output columns exist
-    for col in ['thread_journey', 'thread_todo', 'paste_summary', 'related_resources']:
+    for col in ['thread_tldr', 'thread_problem', 'thread_sentiment', 'thread_timeline', 'thread_links']:
         if col not in df.columns:
             df[col] = ""
     
@@ -302,7 +327,7 @@ def run(results_dir, ai_config, limit=None):
     
     for idx, row in df.iterrows():
         # Skip if already analyzed
-        if pd.notna(row.get('thread_journey')) and row.get('thread_journey'):
+        if pd.notna(row.get('thread_timeline')) and row.get('thread_timeline'):
             continue
         
         issue_url = row.get('Issue URL', '')
@@ -314,23 +339,32 @@ def run(results_dir, ai_config, limit=None):
         print(f"🔗 URL: {issue_url}")
         
         try:
-            journey, todo, paste, resources = analyze_issue_thread(row, model, issue_url)
+            tldr, problem, sentiment, timeline, links = analyze_issue_thread(row, model, issue_url)
             
-            df.at[idx, 'thread_journey'] = journey
-            df.at[idx, 'thread_todo'] = todo
-            df.at[idx, 'paste_summary'] = paste
-            df.at[idx, 'related_resources'] = resources
+            df.at[idx, 'thread_tldr'] = tldr
+            df.at[idx, 'thread_problem'] = problem
+            df.at[idx, 'thread_sentiment'] = sentiment
+            df.at[idx, 'thread_timeline'] = timeline
+            df.at[idx, 'thread_links'] = links
             
             # Only display if we got actual content
-            if journey or todo or paste or resources:
-                print(f"\n{'='*80}")
-                print(f"📋 JOURNEY: {journey[:200]}..." if len(journey) > 200 else f"📋 JOURNEY: {journey}")
-                print(f"\n✅ TODO: {todo[:150]}..." if len(todo) > 150 else f"✅ TODO: {todo}")
-                print(f"\n📝 PASTE SUMMARY: {paste}")
-                print(f"\n🔗 RESOURCES: {resources[:200]}..." if len(resources) > 200 else f"🔗 RESOURCES: {resources}")
-                print(f"{'='*80}\n")
+            if tldr or problem or sentiment or timeline or links:
+                print(f"
+{'='*80}")
+                print(f"📋 TLDR: {tldr[:200]}..." if len(tldr) > 200 else f"📋 TLDR: {tldr}")
+                print(f"
+⚠️ PROBLEM: {problem[:150]}..." if len(problem) > 150 else f"⚠️ PROBLEM: {problem}")
+                print(f"
+💬 SENTIMENT: {sentiment}")
+                print(f"
+📅 TIMELINE: {timeline[:200]}..." if len(timeline) > 200 else f"📅 TIMELINE: {timeline}")
+                print(f"
+🔗 LINKS: {links[:200]}..." if len(links) > 200 else f"🔗 LINKS: {links}")
+                print(f"{'='*80}
+")
             else:
-                print(f"⚠️  No analysis generated (issue may have no comments or scraping failed)\n")
+                print("⚠️  No analysis generated (issue may have no comments or scraping failed)
+")
             
             # Save progress incrementally
             if (idx + 1) % 10 == 0:

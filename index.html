@@ -346,21 +346,30 @@
                 <!-- 3. Thread Analysis -->
                 <div class="card" id="threadAnalysisCard" style="display:none;">
                     <h2>💬 Issue Thread Analysis</h2>
+                    
                     <div class="info-item" style="margin-bottom: 15px;">
-                        <h3>Discussion Journey</h3>
-                        <div id="displayJourney" class="content-block" style="background: #fef3c7; padding: 15px; border-left: 3px solid #f59e0b; white-space: normal;"></div>
+                        <h3>TL;DR</h3>
+                        <div id="displayTldr" class="content-block" style="background: #f3e8ff; padding: 15px; border-left: 3px solid #a855f7;"></div>
                     </div>
+
                     <div class="info-item" style="margin-bottom: 15px;">
-                        <h3>Outstanding TODO Items</h3>
-                        <div id="displayTodo" class="content-block" style="background: #fee2e2; padding: 15px; border-left: 3px solid #ef4444;"></div>
+                        <h3>Problem Statement</h3>
+                        <div id="displayProblem" class="content-block" style="background: #fee2e2; padding: 15px; border-left: 3px solid #ef4444;"></div>
                     </div>
+
                     <div class="info-item" style="margin-bottom: 15px;">
-                        <h3>Paste-able Status Summary</h3>
-                        <div id="displayPasteSummary" class="content-block" style="background: #f3e8ff; padding: 15px; border-left: 3px solid #a855f7; font-family: monospace; font-size: 0.9em;"></div>
+                        <h3>Community Sentiment</h3>
+                        <div id="displaySentiment" class="content-block" style="background: #e0f2fe; padding: 15px; border-left: 3px solid #0ea5e9;"></div>
                     </div>
+
+                    <div class="info-item" style="margin-bottom: 15px;">
+                        <h3>Timeline & Status</h3>
+                        <div id="displayTimeline" class="content-block" style="background: #fef3c7; padding: 15px; border-left: 3px solid #f59e0b; white-space: normal;"></div>
+                    </div>
+
                     <div class="info-item">
-                        <h3>Related Accessibility Resources</h3>
-                        <div id="displayResources" class="content-block" style="background: #dbeafe; padding: 15px; border-left: 3px solid #3b82f6;"></div>
+                        <h3>Key Links</h3>
+                        <div id="displayLinks" class="content-block" style="background: #dbeafe; padding: 15px; border-left: 3px solid #3b82f6;"></div>
                     </div>
                 </div>
                 </div>
@@ -655,15 +664,28 @@
             setText('displayAiWcag', row["ai_wcag"] || "N/A");
 
             // Thread Analysis - show card if data exists
-            const hasThreadData = row["thread_journey"] || row["thread_todo"] || row["paste_summary"] || row["related_resources"];
+            const hasThreadData = row["thread_tldr"] || row["thread_timeline"] || row["thread_journey"]; // Support old and new
             const threadCard = document.getElementById('threadAnalysisCard');
             
             if (hasThreadData) {
                 threadCard.style.display = 'block';
-                document.getElementById('displayJourney').innerHTML = renderJourney(row["thread_journey"], url);
-                document.getElementById('displayTodo').innerHTML = renderList(row["thread_todo"]);
-                document.getElementById('displayPasteSummary').innerHTML = formatReport(row["paste_summary"]);
-                document.getElementById('displayResources').innerHTML = renderList(row["related_resources"]);
+                
+                // Handle new format
+                if (row["thread_tldr"]) {
+                    document.getElementById('displayTldr').innerHTML = formatReport(row["thread_tldr"]);
+                    document.getElementById('displayProblem').innerHTML = formatReport(row["thread_problem"]);
+                    document.getElementById('displaySentiment').innerHTML = formatReport(row["thread_sentiment"]);
+                    document.getElementById('displayTimeline').innerHTML = renderJourney(row["thread_timeline"], url);
+                    document.getElementById('displayLinks').innerHTML = renderList(row["thread_links"]);
+                } 
+                // Fallback for old format (mapping to new fields roughly)
+                else {
+                    document.getElementById('displayTldr').innerHTML = formatReport(row["paste_summary"]);
+                    document.getElementById('displayProblem').innerHTML = "<em>(Data from older scan format)</em>";
+                    document.getElementById('displaySentiment').innerHTML = "<em>(Data from older scan format)</em>";
+                    document.getElementById('displayTimeline').innerHTML = renderJourney(row["thread_journey"], url);
+                    document.getElementById('displayLinks').innerHTML = renderList(row["related_resources"]);
+                }
             } else {
                 threadCard.style.display = 'none';
             }
