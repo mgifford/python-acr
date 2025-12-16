@@ -92,7 +92,47 @@ def run(results_dir, ai_config):
     
     consolidated = []
     
-    # Handle valid SCs
+    # Pre-process: Try to extract WCAG SC from "General" issues based on content
+    def extract_wcag_from_content(row):
+        """Look for WCAG SC patterns in issue content."""
+        import re
+        # Check all text fields for WCAG patterns
+        text_fields = [
+            str(row.get('Issue Description', '')),
+            str(row.get('acr_note', '')),
+            str(row.get('dev_note', '')),
+            str(row.get('thread_journey', '')),
+            str(row.get('paste_summary', ''))
+        ]
+        full_text = ' '.join(text_fields)
+        
+        # Look for patterns like "WCAG 4.1.2", "4.1.2", "SC 4.1.2"
+        patterns = [
+            r'WCAG\s*(\d+\.\d+\.\d+)',
+            r'SC\s*(\d+\.\d+\.\d+)',
+            r'\b(\d+\.\d+\.\d+)\b'
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, full_text)
+            if match:
+                return match.group(1)
+        return None
+    
+    # Reassign "General" issues that have WCAG mentions
+    general_mask = ~df['ai_wcag'].str.match(r'\d+\.\d+\.\d+', na=False)
+    reassigned_count = 0
+    
+    for idx in df[general_mask].index:
+        extracted_sc = extract_wcag_from_content(df.loc[idx])
+        if extracted_sc:
+            df.at[idx, 'ai_wcag'] = extracted_sc
+            reassigned_count += 1
+    
+    if reassigned_count > 0:
+        print(f"📝 Reassigned {reassigned_count} 'General' issues to specific WCAG SC based on content mentions")
+    
+    # Handle valid SCs (including newly reassigned ones)
     valid_sc_df = df[df['ai_wcag'].str.match(r'\d+\.\d+\.\d+', na=False)]
     print(f"Found {len(valid_sc_df)} issues with valid WCAG SCs.")
     
