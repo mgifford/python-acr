@@ -311,6 +311,7 @@ def run(results_dir, ai_config, limit=None):
             continue
         
         print(f"Processing {idx+1}/{len(df)}: {row['Issue Title'][:50]}...")
+        print(f"🔗 URL: {issue_url}")
         
         try:
             journey, todo, paste, resources = analyze_issue_thread(row, model, issue_url)
