@@ -349,22 +349,15 @@ def run(results_dir, ai_config, limit=None):
             
             # Only display if we got actual content
             if tldr or problem or sentiment or timeline or links:
-                print(f"
-{'='*80}")
+                print(f"\n{'='*80}")
                 print(f"📋 TLDR: {tldr[:200]}..." if len(tldr) > 200 else f"📋 TLDR: {tldr}")
-                print(f"
-⚠️ PROBLEM: {problem[:150]}..." if len(problem) > 150 else f"⚠️ PROBLEM: {problem}")
-                print(f"
-💬 SENTIMENT: {sentiment}")
-                print(f"
-📅 TIMELINE: {timeline[:200]}..." if len(timeline) > 200 else f"📅 TIMELINE: {timeline}")
-                print(f"
-🔗 LINKS: {links[:200]}..." if len(links) > 200 else f"🔗 LINKS: {links}")
-                print(f"{'='*80}
-")
+                print(f"\n⚠️ PROBLEM: {problem[:150]}..." if len(problem) > 150 else f"⚠️ PROBLEM: {problem}")
+                print(f"\n💬 SENTIMENT: {sentiment}")
+                print(f"\n📅 TIMELINE: {timeline[:200]}..." if len(timeline) > 200 else f"📅 TIMELINE: {timeline}")
+                print(f"\n🔗 LINKS: {links[:200]}..." if len(links) > 200 else f"🔗 LINKS: {links}")
+                print(f"{'='*80}\n")
             else:
-                print("⚠️  No analysis generated (issue may have no comments or scraping failed)
-")
+                print("⚠️  No analysis generated (issue may have no comments or scraping failed)\n")
             
             # Save progress incrementally
             if (idx + 1) % 10 == 0:
