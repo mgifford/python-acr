@@ -6,8 +6,26 @@ import glob
 from urllib.parse import urlparse, parse_qs
 
 PORT = 8000
+
+def get_latest_file():
+    files = []
+    # Look for thread analyzed files first
+    for file_path in glob.glob("results/**/issues_thread_analyzed_*.csv", recursive=True):
+        files.append(file_path)
+    
+    # If no thread analyzed files, look for summarized issues
+    if not files:
+        for file_path in glob.glob("results/**/issues_summarized_*.csv", recursive=True):
+            files.append(file_path)
+            
+    if files:
+        # Sort by modification time, newest first
+        files.sort(key=os.path.getmtime, reverse=True)
+        return files[0]
+    return "results/12-12-2025/issues_summarized_20251212.csv" # Fallback if nothing found
+
 # Default fallback
-DEFAULT_DATA_FILE = "results/12-12-2025/issues_summarized_20251212.csv"
+DEFAULT_DATA_FILE = get_latest_file()
 
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -20,19 +38,46 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             
             files = []
-            # Look for thread analyzed files first, then summarized issues
-            for file_path in glob.glob("results/**/issues_thread_analyzed_*.csv", recursive=True):
-                files.append(file_path)
+            # Collect ALL candidate files
+            candidates = []
+            candidates.extend(glob.glob("results/**/issues_thread_analyzed_*.csv", recursive=True))
+            candidates.extend(glob.glob("results/**/issues_summarized_*.csv", recursive=True))
             
-            # If no thread analyzed files, fall back to summarized
-            if not files:
-                for file_path in glob.glob("results/**/issues_summarized_*.csv", recursive=True):
-                    files.append(file_path)
+            # Filter candidates: Must have "Issue URL" or "source_url" in header
+            valid_files = []
+            for fpath in candidates:
+                try:
+                    with open(fpath, 'r', encoding='utf-8', errors='ignore') as f:
+                        header = f.readline()
+                        if "Issue URL" in header or "source_url" in header:
+                            valid_files.append(fpath)
+                except Exception:
+                    continue
+
+            # Remove duplicates if any
+            valid_files = list(set(valid_files))
             
-            # Sort files to show newest first (by modification time or name)
-            files.sort(key=os.path.getmtime, reverse=True)
+            # Filter out summarized files if a thread_analyzed file exists for the same run
+            # Assumption: Files are in the same directory
+            final_files = []
+            thread_analyzed_dirs = set()
             
-            self.wfile.write(json.dumps(files).encode())
+            # First pass: identify directories that have thread_analyzed files
+            for fpath in valid_files:
+                if "issues_thread_analyzed_" in fpath:
+                    thread_analyzed_dirs.add(os.path.dirname(fpath))
+            
+            # Second pass: add files, skipping summarized if thread_analyzed exists in same dir
+            for fpath in valid_files:
+                dirname = os.path.dirname(fpath)
+                if "issues_summarized_" in fpath and dirname in thread_analyzed_dirs:
+                    continue
+                final_files.append(fpath)
+            
+            # Sort files to show newest first (by modification time)
+            final_files.sort(key=os.path.getmtime, reverse=True)
+            
+            self.wfile.write(json.dumps(final_files).encode())
             return
 
         # API to load a specific dataset
@@ -41,6 +86,10 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             requested_file = query_params.get('file', [None])[0]
             
             target_file = requested_file if requested_file else DEFAULT_DATA_FILE
+            
+            print(f"DEBUG: Requested file: {requested_file}")
+            print(f"DEBUG: Target file: {target_file}")
+            print(f"DEBUG: Exists: {os.path.exists(target_file)}")
             
             if os.path.exists(target_file):
                 # Basic security check to prevent directory traversal out of results

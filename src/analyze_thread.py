@@ -30,6 +30,55 @@ class OllamaModel:
             print(f"Ollama Error: {e}")
             raise e
 
+def fetch_github_thread(url):
+    """Fetch GitHub issue comments using API."""
+    try:
+        # Parse URL: https://github.com/owner/repo/issues/number
+        parts = url.replace("https://github.com/", "").split("/")
+        if len(parts) < 4 or parts[2] != "issues":
+            print(f"Invalid GitHub URL format: {url}")
+            return None
+            
+        owner = parts[0]
+        repo = parts[1]
+        issue_number = parts[3]
+        
+        api_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/comments"
+        
+        headers = {
+            "Accept": "application/vnd.github.v3+json"
+        }
+        token = os.getenv("GITHUB_TOKEN")
+        if token:
+            headers["Authorization"] = f"token {token}"
+            
+        response = requests.get(api_url, headers=headers, timeout=30)
+        if response.status_code != 200:
+            print(f"Error fetching GitHub comments: {response.status_code}")
+            return None
+            
+        comments_data = response.json()
+        
+        metadata = {
+            'reporter_info': f"GitHub Issue #{issue_number}",
+            'followers': "N/A",
+            'recent_files': [], # GitHub attachments are harder to list simply
+            'comments': []
+        }
+        
+        for comment in comments_data:
+            metadata['comments'].append({
+                'number': str(comment['id']),
+                'author': comment['user']['login'],
+                'content': comment['body'][:500] if comment['body'] else ""
+            })
+            
+        return metadata
+
+    except Exception as e:
+        print(f"Error fetching GitHub thread {url}: {e}")
+        return None
+
 def scrape_drupal_issue(url):
     """Fetch full Drupal issue page and extract metadata + comments."""
     try:
@@ -83,8 +132,13 @@ def scrape_drupal_issue(url):
 def analyze_issue_thread(row, model, url):
     """Use AI to analyze the full issue thread and generate summaries."""
     
-    # Scrape the issue page
-    issue_data = scrape_drupal_issue(url)
+    issue_data = None
+    if "github.com" in url:
+        issue_data = fetch_github_thread(url)
+    else:
+        # Scrape the issue page (Drupal)
+        issue_data = scrape_drupal_issue(url)
+        
     if not issue_data:
         return "", "", "", ""
     
@@ -235,8 +289,8 @@ def run(results_dir, ai_config):
             continue
         
         issue_url = row.get('Issue URL', '')
-        if not issue_url or 'drupal.org' not in issue_url:
-            print(f"Skipping {idx+1}/{len(df)}: No valid Drupal.org URL")
+        if not issue_url or ('drupal.org' not in issue_url and 'github.com' not in issue_url):
+            print(f"Skipping {idx+1}/{len(df)}: No valid Drupal.org or GitHub URL")
             continue
         
         print(f"Processing {idx+1}/{len(df)}: {row['Issue Title'][:50]}...")

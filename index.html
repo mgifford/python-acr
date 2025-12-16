@@ -266,6 +266,7 @@
                         <div class="info-item"><label>Priority</label><div id="displayPriority"></div></div>
                         <div class="info-item"><label>Component</label><div id="displayComponent"></div></div>
                         <div class="info-item"><label>WCAG SC</label><div id="displayWcag"></div></div>
+                        <div class="info-item"><label>URL</label><div id="displayUrl"></div></div>
                     </div>
                     <div class="info-item">
                         <label>Title</label>
@@ -548,13 +549,33 @@
             document.getElementById('nextButton').disabled = currentIndex === allData.length - 1;
 
             // --- Populate Left Panel ---
-            setText('displayId', row["Issue ID"] || row.query_id || "N/A");
+            const issueId = row["Issue ID"] || row.query_id || "N/A";
+            const url = row["Issue URL"] || row.source_url || "";
+            
+            // Link ID if URL exists
+            const idDisplay = document.getElementById('displayId');
+            if (url) {
+                idDisplay.innerHTML = `<a href="${url}" target="_blank" style="color: #2563eb; text-decoration: underline;">${issueId}</a>`;
+            } else {
+                idDisplay.textContent = issueId;
+            }
+
             setText('displayProject', row["Project"] || "N/A");
             setText('displayStatus', row["Status"] || "N/A");
             setText('displayPriority', row["Priority"] || "N/A");
             setText('displayComponent', row["Component"] || "N/A");
             setText('displayWcag', row["wcag_sc"] || "N/A");
             setText('displayTitle', row["Issue Title"] || row.inputs?.query || "Untitled");
+            
+            // Update URL display (Full URL)
+            const urlDisplay = document.getElementById('displayUrl');
+            if (urlDisplay) {
+                if (url) {
+                    urlDisplay.innerHTML = `<a href="${url}" target="_blank" style="color: #2563eb; text-decoration: underline; word-break: break-all;">${url}</a>`;
+                } else {
+                    urlDisplay.textContent = "N/A";
+                }
+            }
             
             // AI Analysis - ACR Note and Developer Note
             const acrNote = row["acr_note"] || row.ai_generated_statement || "";
@@ -663,35 +684,31 @@
         }
 
         function parseCSV(text) {
-            const lines = text.trim().split('\n');
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-            return lines.slice(1).map(line => {
-                const values = [];
-                let inQuote = false;
-                let currentVal = '';
+            const arr = [];
+            let quote = false;  // 'true' means we're inside a quoted field
+            let row = 0, col = 0, c = 0;
+            
+            for (; c < text.length; c++) {
+                let cc = text[c], nc = text[c+1];
+                arr[row] = arr[row] || [];
+                arr[row][col] = arr[row][col] || '';
                 
-                // Better CSV regex/parsing to handle commas inside quotes
-                for (let i = 0; i < line.length; i++) {
-                    const char = line[i];
-                    if (char === '"') {
-                        inQuote = !inQuote;
-                    } else if (char === ',' && !inQuote) {
-                        values.push(currentVal);
-                        currentVal = '';
-                    } else {
-                        currentVal += char;
-                    }
-                }
-                values.push(currentVal); // Last value
+                if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }
+                if (cc == '"') { quote = !quote; continue; }
+                if (cc == ',' && !quote) { ++col; continue; }
+                if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; continue; }
+                if (cc == '\n' && !quote) { ++row; col = 0; continue; }
+                if (cc == '\r' && !quote) { ++row; col = 0; continue; }
+                
+                arr[row][col] += cc;
+            }
 
+            if (arr.length === 0) return [];
+
+            const headers = arr[0].map(h => h.trim());
+            return arr.slice(1).map(values => {
                 return headers.reduce((obj, header, i) => {
-                    let val = values[i] || '';
-                    // Clean up quotes
-                    if (val.startsWith('"') && val.endsWith('"')) {
-                        val = val.substring(1, val.length - 1);
-                    }
-                    val = val.replace(/""/g, '"');
-                    obj[header] = val;
+                    obj[header] = values[i] || '';
                     return obj;
                 }, {});
             });

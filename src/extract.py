@@ -6,11 +6,16 @@ import time
 import re
 import os
 
-def extract_github_issues(repo_full_name, limit=50):
+def extract_github_issues(repo_full_name, tags=None, limit=50):
     print(f"Extracting GitHub issues for: {repo_full_name}")
     # repo_full_name should be "owner/repo"
     
-    labels = ["accessibility", "a11y", "wcag"]
+    if tags:
+        labels = [t.strip() for t in tags]
+        print(f"Using custom labels: {labels}")
+    else:
+        labels = ["accessibility", "a11y", "wcag"]
+    
     all_issues = {}
     
     headers = {
@@ -20,22 +25,23 @@ def extract_github_issues(repo_full_name, limit=50):
     if token:
         headers["Authorization"] = f"token {token}"
 
-    # Discover relevant labels first
-    print("Discovering accessibility labels...")
-    labels_url = f"https://api.github.com/repos/{repo_full_name}/labels"
-    try:
-        l_resp = requests.get(labels_url, headers=headers, params={"per_page": 100})
-        if l_resp.status_code == 200:
-            repo_labels = [l['name'] for l in l_resp.json()]
-            # Find labels containing keywords
-            discovered = [l for l in repo_labels if any(k in l.lower() for k in ["accessibility", "a11y", "wcag"])]
-            if discovered:
-                print(f"Found labels: {discovered}")
-                labels = discovered
-            else:
-                print("No specific accessibility labels found. Using defaults.")
-    except Exception as e:
-        print(f"Warning: Could not auto-discover labels: {e}")
+    # Discover relevant labels first if no custom tags provided
+    if not tags:
+        print("Discovering accessibility labels...")
+        labels_url = f"https://api.github.com/repos/{repo_full_name}/labels"
+        try:
+            l_resp = requests.get(labels_url, headers=headers, params={"per_page": 100})
+            if l_resp.status_code == 200:
+                repo_labels = [l['name'] for l in l_resp.json()]
+                # Find labels containing keywords
+                discovered = [l for l in repo_labels if any(k in l.lower() for k in ["accessibility", "a11y", "wcag"])]
+                if discovered:
+                    print(f"Found labels: {discovered}")
+                    labels = discovered
+                else:
+                    print("No specific accessibility labels found. Using defaults.")
+        except Exception as e:
+            print(f"Warning: Could not auto-discover labels: {e}")
 
     for label in labels:
         page = 1
@@ -92,7 +98,7 @@ def extract_github_issues(repo_full_name, limit=50):
     print(f"Total unique GitHub issues found: {len(all_issues)}")
     return pd.DataFrame(list(all_issues.values()))
 
-def extract_drupal_issues(project_id, limit=50):
+def extract_drupal_issues(project_id, tags=None, limit=50):
     print(f"Extracting issues for project: {project_id}")
     base_url = f"https://www.drupal.org/project/issues/search/{project_id}"
     
@@ -101,31 +107,35 @@ def extract_drupal_issues(project_id, limit=50):
     # or permissive (OR logic) depending on the field. For tags, it's often AND.
     # So we will make separate requests and merge them.
     
-    # Base tags
-    tags_to_search = ["accessibility", "a11y", "wcag"]
-    
-    # Generate specific SC tags (e.g., wcag111, wcag131, wcag412)
-    # We include a broad range to cover A, AA, AAA for WCAG 2.0, 2.1, 2.2
-    sc_list = [
-        # Perceivable
-        "111", "121", "122", "123", "124", "125", "126", "127", "128", "129",
-        "131", "132", "133", "134", "135", "136",
-        "141", "142", "143", "144", "145", "146", "147", "148", "149", "1410", "1411", "1412", "1413",
-        # Operable
-        "211", "212", "213", "214",
-        "221", "222", "223", "224", "225", "226",
-        "231", "232", "233",
-        "241", "242", "243", "244", "245", "246", "247", "248", "249", "2410", "2411", "2412", "2413",
-        "251", "252", "253", "254", "255", "256", "257", "258",
-        # Understandable
-        "311", "312", "313", "314", "315", "316",
-        "321", "322", "323", "324", "325", "326",
-        "331", "332", "333", "334", "335", "336", "337", "338", "339",
-        # Robust
-        "411", "412", "413"
-    ]
-    
-    tags_to_search.extend([f"wcag{sc}" for sc in sc_list])
+    if tags:
+        tags_to_search = [t.strip() for t in tags]
+        print(f"Using custom tags: {tags_to_search}")
+    else:
+        # Base tags
+        tags_to_search = ["accessibility", "a11y", "wcag"]
+        
+        # Generate specific SC tags (e.g., wcag111, wcag131, wcag412)
+        # We include a broad range to cover A, AA, AAA for WCAG 2.0, 2.1, 2.2
+        sc_list = [
+            # Perceivable
+            "111", "121", "122", "123", "124", "125", "126", "127", "128", "129",
+            "131", "132", "133", "134", "135", "136",
+            "141", "142", "143", "144", "145", "146", "147", "148", "149", "1410", "1411", "1412", "1413",
+            # Operable
+            "211", "212", "213", "214",
+            "221", "222", "223", "224", "225", "226",
+            "231", "232", "233",
+            "241", "242", "243", "244", "245", "246", "247", "248", "249", "2410", "2411", "2412", "2413",
+            "251", "252", "253", "254", "255", "256", "257", "258",
+            # Understandable
+            "311", "312", "313", "314", "315", "316",
+            "321", "322", "323", "324", "325", "326",
+            "331", "332", "333", "334", "335", "336", "337", "338", "339",
+            # Robust
+            "411", "412", "413"
+        ]
+        
+        tags_to_search.extend([f"wcag{sc}" for sc in sc_list])
     
     all_issues = {} # Use dict with Issue ID as key to deduplicate
 
@@ -229,12 +239,12 @@ def extract_drupal_issues(project_id, limit=50):
     print(f"Total unique issues found: {len(all_issues)}")
     return pd.DataFrame(list(all_issues.values()))
 
-def run(project_id, repo_id, results_dir):
+def run(project_id, repo_id, results_dir, tags=None):
     # repo_id is passed from argparse, usually same as project_id or 'drupal'
     if repo_id and "/" in repo_id:
-        df = extract_github_issues(repo_id)
+        df = extract_github_issues(repo_id, tags=tags)
     else:
-        df = extract_drupal_issues(repo_id if repo_id else 'drupal')
+        df = extract_drupal_issues(repo_id if repo_id else 'drupal', tags=tags)
     
     if not df.empty:
         timestamp = datetime.now().strftime('%Y%m%d')
