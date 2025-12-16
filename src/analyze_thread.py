@@ -255,7 +255,7 @@ RESOURCES: ...
         print(f"Error analyzing thread: {error_msg}")
         return "", "", "", ""
 
-def run(results_dir, ai_config):
+def run(results_dir, ai_config, limit=None):
     """Analyze issue threads for all issues."""
     files = sorted(results_dir.glob("issues_summarized_*.csv"))
     if not files:
@@ -265,6 +265,11 @@ def run(results_dir, ai_config):
     infile = files[-1]
     print(f"Reading from {infile}")
     df = pd.read_csv(infile)
+    
+    # Apply limit if specified
+    if limit:
+        print(f"Limiting to first {limit} issues (out of {len(df)} total)")
+        df = df.head(limit)
     
     # Ensure output columns exist
     for col in ['thread_journey', 'thread_todo', 'paste_summary', 'related_resources']:

@@ -80,7 +80,7 @@ def analyze_issue(row, model):
         print(f"Error analyzing issue: {error_msg}")
         return "Error", "Error", "Error"
 
-def run(results_dir, ai_config):
+def run(results_dir, ai_config, limit=None):
     files = sorted(results_dir.glob("issues_raw_*.csv"))
     if not files:
         print("No raw issues found to summarize.")
@@ -89,6 +89,11 @@ def run(results_dir, ai_config):
     infile = files[-1]
     print(f"Reading from {infile}")
     df = pd.read_csv(infile)
+    
+    # Apply limit if specified
+    if limit:
+        print(f"Limiting to first {limit} issues (out of {len(df)} total)")
+        df = df.head(limit)
     
     # Ensure output columns exist
     for col in ['ai_wcag', 'acr_note', 'dev_note']:

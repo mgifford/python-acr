@@ -239,12 +239,17 @@ def extract_drupal_issues(project_id, tags=None, limit=50):
     print(f"Total unique issues found: {len(all_issues)}")
     return pd.DataFrame(list(all_issues.values()))
 
-def run(project_id, repo_id, results_dir, tags=None):
+def run(project_id, repo_id, results_dir, tags=None, limit=None):
     # repo_id is passed from argparse, usually same as project_id or 'drupal'
     if repo_id and "/" in repo_id:
         df = extract_github_issues(repo_id, tags=tags)
     else:
         df = extract_drupal_issues(repo_id if repo_id else 'drupal', tags=tags)
+    
+    # Apply limit if specified
+    if limit and not df.empty:
+        print(f"Limiting to first {limit} issues (out of {len(df)} total)")
+        df = df.head(limit)
     
     if not df.empty:
         timestamp = datetime.now().strftime('%Y%m%d')

@@ -17,6 +17,8 @@ def main():
                         help="Specific model name (e.g., 'llama3', 'gemini-1.5-pro')")
     parser.add_argument("--tags", type=str,
                         help="Comma-separated list of tags to search for (overrides default accessibility tags)")
+    parser.add_argument("--limit", type=int,
+                        help="Limit the number of issues to process (useful for testing)")
     
     args = parser.parse_args()
     load_dotenv()
@@ -44,6 +46,15 @@ def main():
     run_folder_name = f"{repo_name}-{model_name}-{today}"
     
     results_dir = Path("results") / run_folder_name
+    
+    # Check if directory exists and ask for confirmation
+    if results_dir.exists():
+        response = input(f"\nDirectory '{results_dir}' already exists. Overwrite? (y/n): ").strip().lower()
+        if response != 'y':
+            print("Aborting. Please rename or delete the existing directory.")
+            return
+        print(f"Overwriting existing directory: {results_dir}")
+    
     results_dir.mkdir(parents=True, exist_ok=True)
     print(f"Results will be saved to: {results_dir}")
 
@@ -57,15 +68,15 @@ def main():
         print("\n--- Step 1: Extracting Issues ---")
         if args.repo:
             tags_list = args.tags.split(",") if args.tags else None
-            extract.run('drupal', args.repo, results_dir, tags=tags_list)
+            extract.run('drupal', args.repo, results_dir, tags=tags_list, limit=args.limit)
 
     if not args.step or args.step == 2:
         print(f"\n--- Step 2: Summarizing with {args.ai_backend.upper()} ---")
-        summarize.run(results_dir, ai_config)
+        summarize.run(results_dir, ai_config, limit=args.limit)
 
     if not args.step or args.step == 3:
         print(f"\n--- Step 3: Analyzing Issue Threads with {args.ai_backend.upper()} ---")
-        analyze_thread.run(results_dir, ai_config)
+        analyze_thread.run(results_dir, ai_config, limit=args.limit)
 
     if not args.step or args.step == 4:
         print(f"\n--- Step 4: Consolidating with {args.ai_backend.upper()} ---")

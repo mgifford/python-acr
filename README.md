@@ -110,6 +110,13 @@ Run entirely locally to avoid API costs and keep data private:
 python run_acr.py --repo drupal --ai-backend ollama --model gemma3:4b
 ```
 
+### Limit Processing for Testing 🧪
+Process only the first N issues (useful for testing):
+```bash
+# Process only first 10 issues
+python run_acr.py --repo drupal --ai-backend ollama --model gemma3:4b --limit 10
+```
+
 ### Custom Tag Scanning (Performance, Sustainability, etc.) 🏷️
 You can override the default accessibility tags to scan for any topic:
 ```bash
@@ -121,10 +128,11 @@ python run_acr.py --repo drupal --tags "performance,sustainability"
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
 | `--repo` | String | None | Drupal project ID (e.g. `drupal`) or GitHub repo (`owner/repo` or URL). |
-| `--step` | Integer | All | Run a specific step (1, 2, 3, or 4). |
+| `--step` | Integer | All | Run a specific step (1, 2, 3, 4, or 5). |
 | `--ai-backend` | String | `gemini` | Choose AI backend: `gemini` (Cloud) or `ollama` (Local). |
 | `--model` | String | None | Specific model name (e.g., `gemma3:4b`, `llama3`). |
 | `--tags` | String | None | Comma-separated list of tags to search (overrides defaults). |
+| `--limit` | Integer | None | Limit number of issues to process (useful for testing). |
 
 ---
 
