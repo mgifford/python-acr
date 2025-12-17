@@ -58,6 +58,8 @@ def extract_github_issues(repo_full_name, tags=None, limit=50):
                 response = requests.get(url, headers=headers, params=params)
                 if response.status_code != 200:
                     print(f"Error fetching GitHub issues: {response.status_code} {response.text}")
+                    if response.status_code == 403 and "rate limit" in response.text.lower():
+                        print("Tip: Use --github-token <token> to increase your API rate limit.")
                     break
                 
                 issues = response.json()

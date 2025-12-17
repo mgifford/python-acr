@@ -63,6 +63,8 @@ def fetch_github_thread(url):
             
             if response.status_code != 200:
                 print(f"Error fetching GitHub comments: {response.status_code}")
+                if response.status_code == 403:
+                    print("Tip: Use --github-token <token> to increase your API rate limit.")
                 break
                 
             comments_data = response.json()

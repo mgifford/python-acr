@@ -133,6 +133,25 @@ python run_acr.py --repo drupal --tags "performance,sustainability"
 | `--model` | String | None | Specific model name (e.g., `gemma2:2b`, `llama3`, `gpt-oss:20b`). |
 | `--tags` | String | None | Comma-separated list of tags to search (overrides defaults). |
 | `--limit` | Integer | None | Limit number of issues to process (useful for testing). |
+| `--github-token` | String | None | GitHub Personal Access Token for higher API rate limits. |
+
+### GitHub Rate Limiting 🚧
+If you encounter `403 API rate limit exceeded` errors when scanning GitHub repositories, you can provide a Personal Access Token (PAT) to increase your limit (from 60 to 5,000 requests/hour).
+
+1.  Generate a token at [GitHub Settings > Tokens](https://github.com/settings/tokens) (no specific scopes needed for public repos).
+2.  Pass it via the command line:
+    ```bash
+    python run_acr.py --repo ckeditor/ckeditor5 --github-token YOUR_TOKEN_HERE
+    ```
+    *Or set it as an environment variable:*
+    ```bash
+    export GITHUB_TOKEN=your_token_here
+    python run_acr.py ...
+    ```
+    *Or add it to your `.env` file:*
+    ```ini
+    GITHUB_TOKEN=your_token_here
+    ```
 
 ---
 

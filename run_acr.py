@@ -19,9 +19,15 @@ def main():
                         help="Comma-separated list of tags to search for (overrides default accessibility tags)")
     parser.add_argument("--limit", type=int,
                         help="Limit the number of issues to process (useful for testing)")
+    parser.add_argument("--github-token", type=str,
+                        help="GitHub Personal Access Token for higher API rate limits")
     
     args = parser.parse_args()
     load_dotenv()
+
+    # Set GitHub token in environment if provided via CLI
+    if args.github_token:
+        os.environ["GITHUB_TOKEN"] = args.github_token
 
     # Normalize repo input if it's a GitHub URL
     if args.repo and "github.com" in args.repo:
