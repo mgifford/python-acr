@@ -1,6 +1,9 @@
 results/
 data/
 __pycache__/
+**/__pycache__/
+*.pyc
 *.log
 .env
 .DS_Store
+*.old
