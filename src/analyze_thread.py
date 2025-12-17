@@ -241,10 +241,10 @@ Do NOT mix formats between platforms.
 GITHUB FORMATTING RULES (github.com):
 
 - Comment anchors use the format:
-  https://github.com/{owner}/{repo}/issues/{NUMBER}#issuecomment-{ID}
+  https://github.com/{{owner}}/{{repo}}/issues/{{NUMBER}}#issuecomment-{{ID}}
 
 - User accounts use the format:
-  https://github.com/{username}
+  https://github.com/{{username}}
 
 - Timeline entries must reference the GitHub username exactly as shown in
   the comment thread.
@@ -255,10 +255,10 @@ GITHUB FORMATTING RULES (github.com):
 DRUPAL FORMATTING RULES (drupal.org):
 
 - Comment anchors use the format:
-  https://www.drupal.org/project/{project}/issues/{NUMBER}#comment-{ID}
+  https://www.drupal.org/project/{{project}}/issues/{{NUMBER}}#comment-{{ID}}
 
 - User accounts use the format:
-  https://www.drupal.org/u/{username}
+  https://www.drupal.org/u/{{username}}
 
 - Timeline entries must reference the Drupal username exactly as shown in
   the issue thread.
@@ -450,8 +450,9 @@ def run(results_dir, ai_config, limit=None):
     print(f"Analyzing threads for {len(df)} issues...")
     
     for idx, row in df.iterrows():
-        # Skip if already analyzed
-        if pd.notna(row.get('thread_timeline')) and row.get('thread_timeline'):
+        # Skip if already analyzed (check if thread_timeline has actual content, not just empty string)
+        if pd.notna(row.get('thread_timeline')) and row.get('thread_timeline', '').strip():
+            print(f"Skipping {idx+1}/{len(df)}: Already analyzed")
             continue
         
         issue_url = row.get('Issue URL', '')

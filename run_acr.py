@@ -47,13 +47,20 @@ def main():
     
     results_dir = Path("results") / run_folder_name
     
-    # Check if directory exists and ask for confirmation
-    if results_dir.exists():
+    # Only check for directory overwrite if we're running step 1 or all steps
+    if (not args.step or args.step == 1) and results_dir.exists():
         response = input(f"\nDirectory '{results_dir}' already exists. Overwrite? (y/n): ").strip().lower()
         if response != 'y':
             print("Aborting. Please rename or delete the existing directory.")
             return
         print(f"Overwriting existing directory: {results_dir}")
+    
+    # For steps 2-5, ensure the directory exists (but don't overwrite)
+    if args.step and args.step > 1:
+        if not results_dir.exists():
+            print(f"Error: Directory '{results_dir}' does not exist. Run step 1 first or run all steps.")
+            return
+        print(f"Using existing directory: {results_dir}")
     
     results_dir.mkdir(parents=True, exist_ok=True)
     print(f"Results will be saved to: {results_dir}")

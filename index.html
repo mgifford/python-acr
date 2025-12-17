@@ -318,11 +318,17 @@
                         <div class="info-item"><label>Priority</label><div id="displayPriority"></div></div>
                         <div class="info-item"><label>Component</label><div id="displayComponent"></div></div>
                         <div class="info-item"><label>WCAG SC</label><div id="displayWcag"></div></div>
+                        <div class="info-item"><label>Version</label><div id="displayVersion"></div></div>
+                        <div class="info-item"><label>Created</label><div id="displayCreated"></div></div>
                         <div class="info-item"><label>URL</label><div id="displayUrl"></div></div>
                     </div>
                     <div class="info-item">
                         <label>Title</label>
                         <div id="displayTitle" style="font-size: 1.1rem; font-weight: bold; color: #2563eb;"></div>
+                    </div>
+                    <div class="info-item">
+                        <label>Original Description</label>
+                        <div id="displayDescription" class="content-block" style="background: #fef3c7; padding: 15px; border-left: 3px solid #f59e0b; max-height: 400px; overflow-y: auto;"></div>
                     </div>
                 </div>
 
@@ -365,6 +371,11 @@
                     <div class="info-item" style="margin-bottom: 15px;">
                         <h3>Timeline & Status</h3>
                         <div id="displayTimeline" class="content-block" style="background: #fef3c7; padding: 15px; border-left: 3px solid #f59e0b; white-space: normal;"></div>
+                    </div>
+
+                    <div class="info-item" style="margin-bottom: 15px;">
+                        <h3>Action Items / TODO</h3>
+                        <div id="displayTodo" class="content-block" style="background: #fce7f3; padding: 15px; border-left: 3px solid #ec4899;"></div>
                     </div>
 
                     <div class="info-item">
@@ -644,7 +655,19 @@
             setText('displayPriority', row["Priority"] || "N/A");
             setText('displayComponent', row["Component"] || "N/A");
             setText('displayWcag', row["wcag_sc"] || "N/A");
+            setText('displayVersion', row["Version"] || "N/A");
+            setText('displayCreated', row["Created"] || "N/A");
             setText('displayTitle', row["Issue Title"] || row.inputs?.query || "Untitled");
+            
+            // Display original description (render Markdown as HTML)
+            const description = row["Description"] || "";
+            const descriptionContainer = document.getElementById('displayDescription').parentElement;
+            if (description.trim()) {
+                descriptionContainer.style.display = 'block';
+                document.getElementById('displayDescription').innerHTML = formatReport(description);
+            } else {
+                descriptionContainer.style.display = 'none';
+            }
             
             // Update URL display (Full URL)
             const urlDisplay = document.getElementById('displayUrl');
@@ -729,6 +752,10 @@
                         timelineContainer.style.display = 'none';
                     }
                     
+                    // TODO - not in new format, hide it
+                    const todoContainer = document.getElementById('displayTodo').parentElement;
+                    todoContainer.style.display = 'none';
+                    
                     // Links
                     const links = row["thread_links"] || "";
                     const linksContainer = document.getElementById('displayLinks').parentElement;
@@ -749,6 +776,17 @@
                     document.getElementById('displaySentiment').innerHTML = "<em>(Data from older scan format)</em>";
                     document.getElementById('displayTimeline').parentElement.style.display = 'block';
                     document.getElementById('displayTimeline').innerHTML = renderJourney(row["thread_journey"], url);
+                    
+                    // TODO - show for old format
+                    const todo = row["thread_todo"] || "";
+                    const todoContainer = document.getElementById('displayTodo').parentElement;
+                    if (todo.trim()) {
+                        todoContainer.style.display = 'block';
+                        document.getElementById('displayTodo').innerHTML = formatReport(todo);
+                    } else {
+                        todoContainer.style.display = 'none';
+                    }
+                    
                     document.getElementById('displayLinks').parentElement.style.display = 'block';
                     document.getElementById('displayLinks').innerHTML = renderList(row["related_resources"]);
                 }
