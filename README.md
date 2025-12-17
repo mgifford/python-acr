@@ -134,6 +134,21 @@ python run_acr.py --repo drupal --tags "performance,sustainability"
 | `--tags` | String | None | Comma-separated list of tags to search (overrides defaults). |
 | `--limit` | Integer | None | Limit number of issues to process (useful for testing). |
 | `--github-token` | String | None | GitHub Personal Access Token for higher API rate limits. |
+| `--results-dir` | String | None | Use a specific results directory (overrides auto-generated name). |
+
+### Using Previous Results
+
+When running steps 2-5, the script will automatically look for an existing results directory. If today's directory doesn't exist, it will search for and offer to use the most recent matching directory from a previous date.
+
+```bash
+# Explicitly use a specific directory from a previous run
+python run_acr.py --repo joomla/joomla-cms --ai-backend ollama --model gemma3:4b --step 3 \
+    --results-dir joomla-joomla-cms-gemma34b-12-16-2025
+
+# Or let the script auto-detect the most recent matching directory
+python run_acr.py --repo joomla/joomla-cms --ai-backend ollama --model gemma3:4b --step 3
+# If today's directory doesn't exist, you'll be prompted to use an earlier one
+```
 
 ### GitHub Rate Limiting 🚧
 If you encounter `403 API rate limit exceeded` errors when scanning GitHub repositories, you can provide a Personal Access Token (PAT) to increase your limit (from 60 to 5,000 requests/hour).

@@ -1,9 +1,44 @@
 import argparse
 import os
+import re
 import pandas as pd
 from dotenv import load_dotenv
 from pathlib import Path
 from src import extract, summarize, analyze_thread, consolidate, generate_yaml
+
+
+def find_existing_results_dir(repo_name, model_name):
+    """
+    Find an existing results directory for the given repo/model combination.
+    Returns the most recent one if multiple exist, or None if none found.
+    """
+    results_path = Path("results")
+    if not results_path.exists():
+        return None
+    
+    # Pattern: repo-model-MM-DD-YYYY
+    pattern = f"{repo_name}-{model_name}-"
+    matching_dirs = []
+    
+    for dir_path in results_path.iterdir():
+        if dir_path.is_dir() and dir_path.name.startswith(pattern):
+            # Extract date from directory name
+            date_part = dir_path.name[len(pattern):]
+            # Validate date format MM-DD-YYYY
+            if re.match(r'\d{2}-\d{2}-\d{4}$', date_part):
+                try:
+                    date = pd.to_datetime(date_part, format='%m-%d-%Y')
+                    matching_dirs.append((dir_path, date))
+                except:
+                    continue
+    
+    if not matching_dirs:
+        return None
+    
+    # Sort by date descending and return the most recent
+    matching_dirs.sort(key=lambda x: x[1], reverse=True)
+    return matching_dirs[0][0]
+
 
 def main():
     parser = argparse.ArgumentParser(description="Automated OpenACR Generator")
@@ -21,6 +56,8 @@ def main():
                         help="Limit the number of issues to process (useful for testing)")
     parser.add_argument("--github-token", type=str,
                         help="GitHub Personal Access Token for higher API rate limits")
+    parser.add_argument("--results-dir", type=str,
+                        help="Use a specific results directory (overrides auto-generated name)")
     
     args = parser.parse_args()
     load_dotenv()
@@ -46,12 +83,17 @@ def main():
     repo_name = args.repo.replace("/", "-") if args.repo else "default"
     model_name = args.model.replace(":", "") if args.model else "default"
     
-    # User requested format: CkEditor-gemma3b-12-13-2025
-    # We put it directly under results/ as requested, or we can keep the date structure.
-    # The user asked for /results/CkEditor-gemma3b-12-13-2025/
-    run_folder_name = f"{repo_name}-{model_name}-{today}"
-    
-    results_dir = Path("results") / run_folder_name
+    # Check if user specified a custom results directory
+    if args.results_dir:
+        results_dir = Path(args.results_dir)
+        if not results_dir.is_absolute():
+            # If relative path, assume it's under results/
+            if not str(results_dir).startswith("results"):
+                results_dir = Path("results") / results_dir
+    else:
+        # User requested format: CkEditor-gemma3b-12-13-2025
+        run_folder_name = f"{repo_name}-{model_name}-{today}"
+        results_dir = Path("results") / run_folder_name
     
     # Only check for directory overwrite if we're running step 1 or all steps
     if (not args.step or args.step == 1) and results_dir.exists():
@@ -61,11 +103,24 @@ def main():
             return
         print(f"Overwriting existing directory: {results_dir}")
     
-    # For steps 2-5, ensure the directory exists (but don't overwrite)
+    # For steps 2-5, ensure the directory exists (or find a previous one)
     if args.step and args.step > 1:
         if not results_dir.exists():
-            print(f"Error: Directory '{results_dir}' does not exist. Run step 1 first or run all steps.")
-            return
+            # Try to find an existing directory from a previous date
+            existing_dir = find_existing_results_dir(repo_name, model_name)
+            if existing_dir:
+                print(f"Today's directory '{results_dir}' does not exist.")
+                print(f"Found existing directory: {existing_dir}")
+                response = input(f"Use '{existing_dir}' instead? (y/n): ").strip().lower()
+                if response == 'y':
+                    results_dir = existing_dir
+                else:
+                    print("Aborting. Use --results-dir to specify a directory, or run step 1 first.")
+                    return
+            else:
+                print(f"Error: Directory '{results_dir}' does not exist and no previous runs found.")
+                print("Run step 1 first, or use --results-dir to specify an existing directory.")
+                return
         print(f"Using existing directory: {results_dir}")
     
     results_dir.mkdir(parents=True, exist_ok=True)
