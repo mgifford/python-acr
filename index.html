@@ -841,48 +841,150 @@
         function formatReport(text) {
             if (!text) return "";
             
-            // Escape HTML first
-            let formatted = escapeHtml(text);
-            
-            // Convert **bold** to <strong>
-            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            
-            // Convert Markdown lists to HTML <ul>
-            // Split by paragraphs (double newline or list items)
-            const lines = formatted.split('\n');
-            let inList = false;
+            const lines = text.split('\n');
+            let inUnorderedList = false;
+            let inOrderedList = false;
+            let inBlockquote = false;
             let htmlLines = [];
             
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 const trimmedLine = line.trim();
                 
-                // Check if this is a list item (starts with * or -)
-                if (/^[\*\-]\s+/.test(trimmedLine)) {
-                    if (!inList) {
-                        htmlLines.push('<ul style="margin: 10px 0; padding-left: 20px; list-style-type: disc;">');
-                        inList = true;
+                // Check if this is a markdown header (starts with ##, ###, etc.)
+                if (/^(#{1,6})\s+(.+)$/.test(trimmedLine)) {
+                    if (inUnorderedList) {
+                        htmlLines.push('</ul>');
+                        inUnorderedList = false;
+                    }
+                    if (inOrderedList) {
+                        htmlLines.push('</ol>');
+                        inOrderedList = false;
+                    }
+                    if (inBlockquote) {
+                        htmlLines.push('</blockquote>');
+                        inBlockquote = false;
+                    }
+                    const match = trimmedLine.match(/^(#{1,6})\s+(.+)$/);
+                    const level = match[1].length;
+                    const content = escapeHtml(match[2]);
+                    htmlLines.push(`<h${level} style="margin: 8px 0 5px 0; font-weight: bold; color: #1e293b;">${content}</h${level}>`);
+                }
+                // Check if this is a blockquote (starts with >)
+                else if (/^>\s*/.test(trimmedLine)) {
+                    if (inUnorderedList) {
+                        htmlLines.push('</ul>');
+                        inUnorderedList = false;
+                    }
+                    if (inOrderedList) {
+                        htmlLines.push('</ol>');
+                        inOrderedList = false;
+                    }
+                    if (!inBlockquote) {
+                        htmlLines.push('<blockquote style="margin: 10px 0; padding: 10px 15px; border-left: 4px solid #cbd5e1; background: #f8fafc; color: #475569;">');
+                        inBlockquote = true;
+                    }
+                    // Remove the > and process the content
+                    const content = trimmedLine.replace(/^>\s*/, '');
+                    
+                    // Check if the content is indented (4+ spaces in original line after >)
+                    const afterQuote = line.substring(line.indexOf('>') + 1);
+                    if (/^\s{4,}/.test(afterQuote) || afterQuote.startsWith('\t')) {
+                        // This is indented/preformatted text within the blockquote
+                        htmlLines.push(`<div style="margin-left: 20px; font-family: monospace; white-space: pre-wrap;">${escapeHtml(content)}</div>`);
+                    } else if (content) {
+                        htmlLines.push(`<div>${escapeHtml(content)}</div>`);
+                    } else {
+                        htmlLines.push('<div><br></div>');
+                    }
+                }
+                // Check if this is an ordered list item (starts with number.)
+                else if (/^\d+\.\s+/.test(trimmedLine)) {
+                    if (inUnorderedList) {
+                        htmlLines.push('</ul>');
+                        inUnorderedList = false;
+                    }
+                    if (inBlockquote) {
+                        htmlLines.push('</blockquote>');
+                        inBlockquote = false;
+                    }
+                    if (!inOrderedList) {
+                        htmlLines.push('<ol style="margin: 5px 0; padding-left: 20px;">');
+                        inOrderedList = true;
+                    }
+                    // Remove the number. and wrap in <li>
+                    const content = trimmedLine.replace(/^\d+\.\s+/, '');
+                    // Process **bold** in content
+                    const processedContent = escapeHtml(content).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    htmlLines.push(`<li style="margin-bottom: 3px;">${processedContent}</li>`);
+                }
+                // Check if this is an unordered list item (starts with * or -)
+                else if (/^[\*\-]\s+/.test(trimmedLine)) {
+                    if (inOrderedList) {
+                        htmlLines.push('</ol>');
+                        inOrderedList = false;
+                    }
+                    if (inBlockquote) {
+                        htmlLines.push('</blockquote>');
+                        inBlockquote = false;
+                    }
+                    if (!inUnorderedList) {
+                        htmlLines.push('<ul style="margin: 5px 0; padding-left: 20px; list-style-type: disc;">');
+                        inUnorderedList = true;
                     }
                     // Remove the * or - and wrap in <li>
                     const content = trimmedLine.replace(/^[\*\-]\s+/, '');
-                    htmlLines.push(`<li style="margin-bottom: 8px;">${content}</li>`);
+                    // Process **bold** in content
+                    const processedContent = escapeHtml(content).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    htmlLines.push(`<li style="margin-bottom: 3px;">${processedContent}</li>`);
                 } else {
-                    // Not a list item
-                    if (inList) {
+                    // Check if we need to close blockquote
+                    if (inBlockquote && trimmedLine === '') {
+                        // Empty line might continue blockquote, check next line
+                        if (i + 1 < lines.length && /^>\s*/.test(lines[i + 1].trim())) {
+                            htmlLines.push('<div><br></div>');
+                            continue;
+                        } else {
+                            htmlLines.push('</blockquote>');
+                            inBlockquote = false;
+                        }
+                    }
+                    // Not a list item, header, or blockquote
+                    if (inUnorderedList) {
                         htmlLines.push('</ul>');
-                        inList = false;
+                        inUnorderedList = false;
+                    }
+                    if (inOrderedList) {
+                        htmlLines.push('</ol>');
+                        inOrderedList = false;
                     }
                     if (trimmedLine) {
-                        htmlLines.push(line);
+                        // Process **bold** in regular text
+                        const processedLine = escapeHtml(line).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        htmlLines.push(processedLine);
                     } else {
-                        htmlLines.push('<br>');
+                        // Skip consecutive blank lines - only add one break
+                        if (htmlLines.length > 0 && htmlLines[htmlLines.length - 1] !== '<br>') {
+                            htmlLines.push('<br>');
+                        }
                     }
                 }
             }
             
-            // Close list if still open
-            if (inList) {
+            // Close any open tags
+            if (inUnorderedList) {
                 htmlLines.push('</ul>');
+            }
+            if (inOrderedList) {
+                htmlLines.push('</ol>');
+            }
+            if (inBlockquote) {
+                htmlLines.push('</blockquote>');
+            }
+            
+            // Clean up: remove trailing <br> tags
+            while (htmlLines.length > 0 && htmlLines[htmlLines.length - 1] === '<br>') {
+                htmlLines.pop();
             }
             
             return htmlLines.join('\n');
