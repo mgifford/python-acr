@@ -310,7 +310,12 @@
                 <div class="content-column">
                 <!-- 1. Issue Details -->
                 <div class="card">
-                    <h2>Issue Details</h2>
+                    <h2 style="display: flex; align-items: center; gap: 10px;">
+                        Issue Details
+                        <button id="copyContentColumnBtn" title="Copy all details in this column" style="margin-left: 8px; padding: 4px 10px; font-size: 0.9em; background: #e0e7ef; color: #2563eb; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer;">
+                            📋 Copy All
+                        </button>
+                    </h2>
                     <div class="info-grid">
                         <div class="info-item"><label>ID</label><div id="displayId"></div></div>
                         <div class="info-item"><label>Project</label><div id="displayProject"></div></div>
@@ -426,6 +431,34 @@
     </div>
 
     <script>
+        // Copy Content Column Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const copyBtn = document.getElementById('copyContentColumnBtn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', function() {
+                    const contentColumn = document.querySelector('.content-column');
+                    if (contentColumn) {
+                        // Get all visible text (including headings, labels, and values)
+                        let text = '';
+                        // Clone to avoid copying the button itself
+                        const clone = contentColumn.cloneNode(true);
+                        // Remove the copy button from the clone
+                        const btn = clone.querySelector('#copyContentColumnBtn');
+                        if (btn) btn.remove();
+                        // Get text content
+                        text = clone.innerText || clone.textContent || '';
+                        // Copy to clipboard
+                        navigator.clipboard.writeText(text).then(() => {
+                            copyBtn.textContent = '✅ Copied!';
+                            setTimeout(() => { copyBtn.textContent = '📋 Copy All'; }, 1200);
+                        }, () => {
+                            copyBtn.textContent = '❌ Failed';
+                            setTimeout(() => { copyBtn.textContent = '📋 Copy All'; }, 1200);
+                        });
+                    }
+                });
+            }
+        });
         // Configuration
         const DATA_ENDPOINT = '/data/llm_feedback_data.json';
         let allData = [];
