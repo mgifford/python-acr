@@ -156,23 +156,42 @@ def scrape_drupal_issue(url):
         screenshot_count = 0
         for comment in comment_divs[:200]:  # Increased limit to 200
             comment_num = comment.find('a', class_='permalink')
-            author = comment.find('span', class_='username')
-            author_link = None
-            if author and author.parent.name == 'a':
-                author_link = author.parent.get('href')
-            elif author:
-                # Sometimes the <a> is the author itself
-                if author.name == 'a':
-                    author_link = author.get('href')
             content = comment.find('div', class_='content')
+            
+            # Extract author from .submitted div (main location for author info)
+            author = None
+            author_link = None
+            submitted = comment.find('div', class_='submitted')
+            if submitted:
+                author_tag = submitted.find('a', class_='username')
+                if author_tag:
+                    author = author_tag.get_text(strip=True)
+                    author_link = author_tag.get('href')
+            
+            # Fallback: try to find author in comment body if not in .submitted
+            if not author and content:
+                author_tag = content.find('a', class_='username')
+                if author_tag:
+                    author = author_tag.get_text(strip=True)
+                    author_link = author_tag.get('href')
+            
             comment_anchor = comment_num['href'] if comment_num and comment_num.has_attr('href') else None
             content_text = content.get_text(strip=True)[:1000] if content else ""
             if any(ext in content_text.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif']) or (content and content.find('img')):
                 screenshot_count += 1
-            if comment_num and author and content:
+            
+            # Skip if no author or content
+            if not author or not content:
+                continue
+            
+            # Extract comment number from text like "Comment#31"
+            num_text = comment_num.get_text(strip=True) if comment_num else ""
+            comment_number = num_text.replace('Comment', '').replace('#', '')
+            
+            if comment_number:
                 comments.append({
-                    'number': comment_num.get_text(strip=True).replace('#', ''),
-                    'author': author.get_text(strip=True),
+                    'number': comment_number,
+                    'author': author,
                     'profile_link': f"https://www.drupal.org{author_link}" if author_link else None,
                     'comment_anchor': f"https://www.drupal.org{comment_anchor}" if comment_anchor else None,
                     'content': content_text
@@ -197,7 +216,7 @@ def analyze_issue_thread(row, model, url):
         issue_data = scrape_drupal_issue(url)
         
     if not issue_data:
-        return "", "", "", "", ""
+        return "", "", "", "", "", ""
     
     # Engagement metrics
     comments = issue_data.get('comments', [])
@@ -439,7 +458,7 @@ LINKS: ...
             if current_section == 'LINKS':
                 links = content
         
-        return tldr, problem, sentiment, timeline, links
+        return tldr, problem, sentiment, timeline, links, engagement_metrics
         
     except Exception as e:
         error_str = str(e)
@@ -454,7 +473,7 @@ LINKS: ...
         error_msg = error_str.split('\n')[0]
         if len(error_msg) > 200: error_msg = error_msg[:200] + "..."
         print(f"Error analyzing thread: {error_msg}")
-        return "", "", "", "", ""
+        return "", "", "", "", "", ""
 
 def run(results_dir, ai_config, limit=None):
     """Analyze issue threads for all issues."""
@@ -512,11 +531,14 @@ def run(results_dir, ai_config, limit=None):
             print(f"Skipping {idx+1}/{len(df)}: No valid Drupal.org or GitHub URL")
             continue
         
-        print(f"Processing {idx+1}/{len(df)}: {row['Issue Title'][:50]}...")
+        # Extract issue number from URL
+        issue_number = issue_url.split('/')[-1] if '/' in issue_url else '?'
+        
+        print(f"Processing (#{issue_number}) {idx+1}/{len(df)}: {row['Issue Title'][:50]}...")
         print(f"🔗 URL: {issue_url}")
         
         try:
-            tldr, problem, sentiment, timeline, links = analyze_issue_thread(row, model, issue_url)
+            tldr, problem, sentiment, timeline, links, engagement_metrics = analyze_issue_thread(row, model, issue_url)
             
             df.at[idx, 'thread_tldr'] = tldr
             df.at[idx, 'thread_problem'] = problem
