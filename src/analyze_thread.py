@@ -295,7 +295,14 @@ Use actual comment numbers and usernames. Each timeline entry MUST be on its own
 Do not combine events or summarize multiple comments into one entry.
 
 6. LINK HYGIENE  
-Do NOT include the original issue URL. Only include external references explicitly mentioned or clearly relevant to understanding the accessibility barrier (WCAG, MDN, specs, related issues).
+CRITICAL: Do NOT include links to the primary issue being evaluated (the URL provided above). Never reference the current issue itself.
+DO include:
+- Related issues from the same tracker (if explicitly mentioned in comments)
+- WCAG Success Criteria (w3.org/WAI/WCAG22)
+- ARIA specifications (w3.org/TR/wai-aria)
+- MDN Web Docs for accessibility features
+- External standards or specifications referenced in the discussion
+Only include links that are explicitly mentioned in the issue thread or that clarify the accessibility barrier itself.
 
 7. STANDARDS BASELINE  
 - Use WCAG 2.2 Level AA as the accessibility baseline
@@ -520,6 +527,8 @@ def run(results_dir, ai_config, limit=None):
             # Only display if we got actual content
             if tldr or problem or sentiment or timeline or links:
                 print(f"\n{'='*80}")
+                print(engagement_metrics)
+                print(f"{'='*80}")
                 print(f"📋 TLDR: {tldr[:200]}..." if len(tldr) > 200 else f"📋 TLDR: {tldr}")
                 print(f"\n⚠️ PROBLEM: {problem[:150]}..." if len(problem) > 150 else f"⚠️ PROBLEM: {problem}")
                 print(f"\n💬 SENTIMENT: {sentiment}")
