@@ -2,7 +2,9 @@ import argparse
 import os
 import re
 import pandas as pd
+
 from dotenv import load_dotenv
+load_dotenv()
 from pathlib import Path
 from src import extract, summarize, analyze_thread, consolidate, generate_yaml
 
@@ -60,7 +62,6 @@ def main():
                         help="Use a specific results directory (overrides auto-generated name)")
     
     args = parser.parse_args()
-    load_dotenv()
 
     # Set GitHub token in environment if provided via CLI
     if args.github_token:
@@ -127,9 +128,17 @@ def main():
     print(f"Results will be saved to: {results_dir}")
 
     # Pass AI config to the modules
+    # Determine model_name, using .env default if needed
+    model_name = args.model
+    if args.ai_backend == 'ollama' and not model_name:
+        model_name = os.getenv('OLLAMA_DEFAULT_MODEL')
+        if model_name:
+            print(f"[INFO] Using OLLAMA_DEFAULT_MODEL from .env: {model_name}")
+        else:
+            print("[WARNING] No model specified and OLLAMA_DEFAULT_MODEL not set in .env. Using package default.")
     ai_config = {
         "backend": args.ai_backend,
-        "model_name": args.model
+        "model_name": model_name
     }
 
     if not args.step or args.step == 1:
