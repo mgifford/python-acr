@@ -97,7 +97,38 @@
             try {
                 // Load projects with multiple runs
                 const projRes = await fetch('/results/projects_with_multiple_runs.json');
-                projects = Object.keys(await projRes.json());
+                const allProjectsObj = await projRes.json();
+                // Load all comparison data
+                const res = await fetch('/results/comparison.json');
+                let rawData = await res.json();
+                // For each model in each item, check if its run folder exists by attempting to fetch its CSV file
+                async function modelExists(model) {
+                    // Use the csv_path property if present
+                    if (!model.csv_path) return false;
+                    try {
+                        const test = await fetch(model.csv_path, {method: 'HEAD'});
+                        return test.ok;
+                    } catch (e) { return false; }
+                }
+                // Filter models by existence
+                async function filterModelsByExistence(data) {
+                    let filtered = [];
+                    for (const item of data) {
+                        let validModels = [];
+                        for (const m of item.models) {
+                            if (await modelExists(m)) validModels.push(m);
+                        }
+                        if (validModels.length > 0) {
+                            filtered.push({...item, models: validModels});
+                        }
+                    }
+                    return filtered;
+                }
+                allData = await filterModelsByExistence(rawData);
+                // Only include projects that have at least one valid model
+                projects = Object.keys(allProjectsObj).filter(p =>
+                    allData.some(item => item.models.some(m => m.model_name.startsWith(p + '-')))
+                );
                 const select = document.getElementById('project-select');
                 select.innerHTML = '';
                 if (projects.length === 0) {
@@ -113,9 +144,6 @@
                     select.appendChild(opt);
                 });
                 selectedProject = projects[0];
-                // Load all comparison data
-                const res = await fetch('/results/comparison.json');
-                allData = await res.json();
                 filterDataByProject();
             } catch (e) { console.error(e); }
         }

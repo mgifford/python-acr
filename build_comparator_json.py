@@ -3,8 +3,9 @@ import json
 from pathlib import Path
 import pandas as pd
 
-RESULTS_DIR = Path('results')
-OUTPUT_PATH = Path('results/comparison.json')
+BASE_DIR = Path(__file__).resolve().parent
+RESULTS_DIR = BASE_DIR / 'results'
+OUTPUT_PATH = RESULTS_DIR / 'comparison.json'
 OUTPUT_PATH.parent.mkdir(exist_ok=True)
 
 # Utility: Parse run folder name into repo, model, date
@@ -47,7 +48,9 @@ def build_comparison():
         csvs = sorted(folder.glob('issues_summarized_*.csv'))
         if not csvs:
             continue
-        df = pd.read_csv(csvs[-1])
+        latest_csv = csvs[-1]
+        csv_path = f"/results/{folder.name}/{latest_csv.name}"
+        df = pd.read_csv(latest_csv)
         for _, row in df.iterrows():
             item_id = str(row.get('Issue ID', row.get('id', 'unknown')))
             def safe(val):
@@ -63,9 +66,14 @@ def build_comparison():
                 }
             comparison_items[item_id]['models'].append({
                 'model_name': f"{meta['repo']}-{meta['model']}-{meta['date']}",
-                'text': safe(row.get('acr_note', row.get('thread_tldr', '')))
+                'text': safe(row.get('acr_note', row.get('thread_tldr', ''))),
+                'csv_path': csv_path
             })
     # Output as a list
     with open(OUTPUT_PATH, 'w') as f:
         json.dump(list(comparison_items.values()), f, indent=2)
     print(f"Comparison JSON written to {OUTPUT_PATH}")
+
+
+if __name__ == '__main__':
+    build_comparison()
