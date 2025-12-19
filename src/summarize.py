@@ -196,7 +196,14 @@ def run(results_dir, ai_config, limit=None):
         if str(row['Issue ID']) in processed_ids:
             continue
 
-        print(f"Processing {idx+1}/{len(df)}: {row['Issue Title'][:30]}...")
+        # Extract issue number from URL
+        issue_url = row.get('Issue URL', '')
+        issue_num = ''
+        if '/issues/' in issue_url:
+            issue_num = issue_url.split('/issues/')[-1].split('/')[0].split('#')[0]
+            issue_num = f"#{issue_num} "
+        
+        print(f"Processing {issue_num}{idx+1}/{len(df)}: {row['Issue Title'][:30]}...")
         wcag, acr, dev = analyze_issue(row, model)
         
         # Prefer AI wcag detection if raw was unknown

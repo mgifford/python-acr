@@ -462,7 +462,13 @@ def run(results_dir, ai_config, limit=None):
             print(f"Skipping {idx+1}/{len(df)}: No valid Drupal.org or GitHub URL")
             continue
         
-        print(f"Processing {idx+1}/{len(df)}: {row['Issue Title'][:50]}...")
+        # Extract issue number from URL
+        issue_num = ''
+        if '/issues/' in issue_url:
+            issue_num = issue_url.split('/issues/')[-1].split('/')[0].split('#')[0]
+            issue_num = f"#{issue_num} "
+        
+            print(f"Processing {issue_num}{idx+1}/{len(df)}: {row['Issue Title'][:50]}...")
         print(f"🔗 URL: {issue_url}")
         
         try:
