@@ -1,0 +1,70 @@
+WCAG SC,ACR Assessment,ACR Summary,Issue Count
+1.1.1,partially-supports,"Okay, here’s the output formatted according to your instructions, based on the provided OpenACR/VPAT information:
+
+**LEVEL:** does-not-support
+
+**REMARKS:**  Significant accessibility barriers persist regarding alternative text provision for images, form fields, and media content. Screen reader users experience difficulties understanding image content, form state, and navigation, impacting usability and information access.
+
+**ISSUES:** 1.1.1.1, 1.1.1.2, 1.1.1.3, 1.1.1.6, 1.1.1.8, 1.1.1.9, 1.1.1.10, 1.1.1.11, 1.1.1.12, 1.1.1.13, 1.1.1.14, 1.1.1.15
+",13
+1.2.2,does-not-support,Users may experience difficulty accessing and interacting with audio tracks and captions due to limitations in WebVTT file management and a lack of explicit accessibility controls. This impacts content comprehension and selection of preferred audio/video options.,3
+1.3.1,does-not-support,"Multiple open issues indicate accessibility barriers across various assistive technologies and user groups. Concerns include unclear form field indicators, deficient screen reader support for status updates, datetime elements, and required radio groups, alongside issues related to color contrast, high-contrast mode, and feedback mechanisms for actions like add-sections and remove blocks. Further investigation is needed.",23
+1.3.3,does-not-support,"Users may experience difficulty navigating the footer due to visual separation of menu items, potentially impacting usability for users with cognitive disabilities or keyboard users.",1
+1.3.4,partially-supports,"The system may partially support WCAG 1.3.4 due to potential impacts from the `manifest.json` file. Dynamic alterations to content or behavior based on this file could affect screen reader announcements and focus order, potentially creating barriers for users with disabilities.",1
+1.3.5,does-not-support,"Autocomplete functionality may present barriers for users. Specifically, the replacement of a UI library introduces uncertainty regarding accessibility compliance, and IME behavior on Android devices can result in unexpected search disruptions.",2
+1.4.1,does-not-support,"Several open issues indicate accessibility barriers impacting screen reader users and individuals with low vision. These include challenges with unpublished styles, color contrast, menu navigation, database log entry identification, sortable table functionality, and drag-and-drop interactions.",7
+1.4.10,does-not-support,"Multiple open issues indicate potential accessibility barriers impacting user understanding, navigation, and content readability across various screen sizes and assistive technologies. These include challenges with form error presentation, responsive layout issues, and tabular data access.",7
+1.4.11,does-not-support,"Multiple issues relate to insufficient color contrast impacting users with low vision. Barriers exist concerning button readability, icon visibility, editor focus, and contextual link discoverability. These issues require further investigation and remediation.",11
+1.4.12,does-not-support,Off-canvas dialogs may present challenges for users with disabilities due to potential keyboard operability and screen reader navigation difficulties. Focus management within these interfaces requires further evaluation.,1
+1.4.3,partially-supports,"Insufficient color contrast between link text and background in the link panel may present a barrier for users with low vision, potentially impacting their ability to identify and access information.",1
+1.4.4,does-not-support,"Users may experience difficulty with hierarchical select lists due to insufficient indentation and with shortcut action links due to limited horizontal space, potentially increasing cognitive load.",2
+2.1.1,partially-supports,"Okay, here’s the output formatted according to your instructions, reflecting a conservative and factual assessment based on the provided OpenACR/VPAT documentation:
+
+**LEVEL:** does-not-support
+
+**REMARKS:**  Multiple open issues indicate significant accessibility barriers impacting keyboard navigation, screen reader usage, and menu interaction. These barriers prevent users from effectively accessing content and functionality, creating usability challenges for individuals with disabilities.
+
+**ISSUES:**
+- OA-2.1.1-01
+- OA-2.1.1-02
+- OA-2.1.1-03
+- OA-2.1.1-04
+- OA-2.1.1-05
+- OA-2.1.1-06
+- OA-2.1.1-07
+- OA-2.1.1-08
+- OA-2.1.1-09
+- OA-2.1.1-10
+- OA-2.1.1-11
+- OA-2.1.1-12
+- OA-2.1.1-13
+- OA-2.1.1-14
+- OA-2.1.1-15
+- OA-2.1.1-16
+",15
+2.2.2,partially-supports,"Users may experience distraction or cognitive fatigue due to animations, particularly those who utilize reduced motion. This impacts the usability of interactive elements.",1
+2.3.3,does-not-support,"Olivero contains animation elements that may cause distraction or discomfort for users with motion sensitivities or cognitive impairments. Open issues indicate a lack of controls for managing these animations, posing a barrier to usability.",2
+2.4.11,does-not-support,"Users may experience difficulties navigating the mobile site due to focus issues and a horizontal scroll in the media library dialog, impacting keyboard accessibility and content access.",2
+2.4.2,does-not-support,"The system exhibits barriers to navigation for screen reader users, specifically related to local navigation titles, workspace identification within the Workspaces listing, and global page number display. These issues may impact user understanding and task completion.",3
+2.4.3,does-not-support,"Multiple active issues indicate significant accessibility barriers related to keyboard navigation, screen reader interaction, and modal window behavior, impacting user’s ability to effectively utilize tabular data, page layouts, and content editing features.",9
+2.4.4,does-not-support,"The system exhibits accessibility barriers impacting users of screen readers. Specifically, link text lacks sufficient description and appropriate ARIA attributes, causing difficulty navigating commenting functionality. Unclear link descriptions and issues with drop button labels further impede user interaction.",3
+2.4.6,does-not-support,Users with screen reader technology may experience difficulty understanding page structure and content due to unlabeled visually-hidden block titles and form field label placement within headings.  Navigation challenges related to heading order are also present.,3
+2.4.7,does-not-support,"Multiple open issues indicate significant accessibility barriers affecting navigation, focus management, and user experience across various interface elements.  These issues impact users relying on keyboard, screen readers, and assistive technologies, hindering their ability to effectively interact with the system.",12
+2.4.9,does-not-support,Users may experience difficulty locating and interacting with update links on the available updates page due to unclear link text. This impacts the user’s ability to stay informed about product updates.,1
+2.5.1,does-not-support,"Accessibility barriers exist related to table drag-and-drop, drag-and-drop grid interfaces, and form element distinguishability. These issues may impact user interaction and data entry.",3
+2.5.2,does-not-support,"Accessibility barriers exist related to event handling, Ajax interactions, and keyboard navigation.  Specifically, issues relate to potential screen reader compatibility and user control when interacting with interactive elements.",3
+2.5.3,does-not-support,"Screen reader users may experience navigation inconsistencies and difficulty understanding form fields, links within the Entity List Builder, and actions within the EntityOperation views plugin due to inadequate labeling and descriptions.",4
+2.5.5,does-not-support,The absence of specific details regarding “Claro” prevents assessment of WCAG 2.1.5 conformance. The identified issue highlights a lack of clarity regarding potential accessibility barriers and their impact on users with disabilities.,1
+2.5.8,does-not-support,"Small interface elements pose a barrier for users with low vision and motor impairments, impacting their ability to accurately select and interact with functionality.",2
+3.1.2,does-not-support,"Multiple open issues identify significant barriers to accessibility for users of this product, particularly concerning language identification, content understanding, and form field interpretation. These issues impact user comprehension and interaction with the application’s core functionality.",11
+3.2.1,does-not-support,"Inconsistent keyboard navigation, missing alternative text, and insufficient color contrast negatively impact screen reader and keyboard-only user access to form functionality and visual content.",1
+3.2.2,does-not-support,"Client-side search/filtering functionality for rendered lists lacks accessibility considerations, potentially hindering users of assistive technologies from effectively locating and navigating information.",1
+3.2.3,does-not-support,"Users may experience navigation barriers due to inconsistent scrolling, inaccurate uninstall filtering, and screen reader challenges within the admin interface. These issues may impede task completion for users with disabilities.",5
+3.2.5,does-not-support,Users may experience difficulty accessing dialog content and functionality due to the potential replacement of accessible elements with non-accessible alternatives. This impacts screen reader users.,1
+3.3.1,does-not-support,"Multiple open issues indicate significant accessibility barriers impacting form usability, screen reader navigation, and error identification. Users experience confusion with error messaging, form validation, and media library interactions, hindering task completion.",16
+3.3.2,does-not-support,"Screen reader users may experience difficulty navigating and utilizing the filter configuration form and admin list filters due to missing accessible names and inconsistent labelling, impacting the ability to complete tasks and understand filter options.",3
+3.3.6,does-not-support,Full-screen CKEditor mode presents barriers for users reliant on keyboard navigation or screen reader technology due to a lack of accessible controls and visual cues. This impacts the ability to complete tasks within the editor.,1
+4.1.1,does-not-support,"The system exhibits an accessibility failure impacting search/node functionality, potentially affecting users of assistive technologies. Further investigation is required to determine the root cause and full impact.",1
+4.1.2,does-not-support,"Multiple issues indicate accessibility barriers impacting screen reader users’ ability to interact with key UI elements, including filters, forms, layouts, and various modal windows.  Unresolved issues relate to ARIA implementation, semantic markup, and content descriptions, significantly hindering usability and access.",38
+4.1.3,does-not-support,"Screen reader users experience challenges with asynchronous operations, dynamic filter updates, view toggles, Dropbuttons, row weight controls, and Claro theme installation status, leading to potential confusion and impacting task completion.",6
+General,does-not-support,"Several open issues indicate potential accessibility barriers for screen reader users, including difficulties with CKEditor 5 text areas, toolbar navigation, taxonomy filtering, form submissions, tabular data interpretation, and menu access. These challenges create significant risk for users with disabilities.",38

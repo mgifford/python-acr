@@ -56,44 +56,151 @@ WCAG_ASSESSMENT: ...
 
 ## 2. Thread Analysis (`src/analyze_thread.py`)
 
-**Purpose:** Analyzes the full comment thread of an issue to extract the discussion journey, TODOs, and resources.
+**Purpose:** Analyzes the full comment thread of an issue to extract the discussion journey, engagement, and actionable next steps.
 
-**Updated Prompt (Post-Validation):**
+**Latest Prompt (Dec 2025):**
 ```text
-Analyze this accessibility issue thread and provide a structured summary.
+You are an experienced web accessibility professional reviewing an accessibility
+issue thread to assess the validity of the reported barrier, the quality of discussion,
+and the current state of resolution based solely on recorded evidence.
+
+Analyze the following accessibility issue thread and provide a structured, factual summary.
 
 ISSUE: {row['Issue Title']}
 REPORTER: {issue_data.get('reporter_info', 'Unknown')}
+FOLLOWERS: {issue_data.get('followers', 'Unknown')}
+RECENT FILES/PATCHES: {', '.join(issue_data.get('recent_files', []))}
+ENGAGEMENT METRICS:
+- Unique users: {num_unique_users}
+- Total comments: {num_comments}
+- Patches/PRs: {num_patches}
+- Screenshots: {num_screenshots}
+
 COMMENT THREAD:
 {comments_text}
 
+ORIGINAL DESCRIPTION:
+{row['Description']}
+
 CRITICAL INSTRUCTIONS:
-1. DO NOT INVENT OR HALLUCINATE: Only use actual usernames, comment numbers, and events from the thread above.
-2. BE EXPLICIT ABOUT LIMITED DATA: If there are only 1-2 comments, say "minimal discussion" - don't speculate.
-3. NO REDUNDANT LINKS: Do NOT include the original issue URL (it's captured elsewhere).
-4. SENTIMENT ACCURACY: "Collaborative" requires 2+ people engaging. Single report = "Initial report only".
-5. USE ACTUAL COMMENT NUMBERS: Reference the #number from COMMENT THREAD, not invented numbers.
+1. NO INVENTION OR INFERENCE  
+Use ONLY information explicitly present in the issue title, description, and comment
+thread above. Do not infer intent, outcomes, or internal decisions. Do not invent users,
+events, fixes, or timelines.
 
-TLDR: Executive summary (2-3 sentences). Be honest if status is unknown.
-PROBLEM_STATEMENT: Accessibility barrier definition with WCAG criteria.
-SENTIMENT: One of: "Active collaboration", "Minimal engagement", "Stalled", "Initial report only"
-TIMELINE: Format as "# N username: action" using ONLY actual data from COMMENT THREAD above.
-LINKS: External WCAG/MDN docs mentioned in comments. NO original issue URL.
-```
+2. EXPLICIT DATA LIMITS  
+If discussion is limited, state that clearly using phrases such as:
+- "Initial report only"
+- "Minimal discussion"
+- "No evidence of follow-up or resolution"
 
-PROBLEM_STATEMENT: A clear definition of the accessibility barrier, referencing specific WCAG criteria if applicable.
+Do not speculate about what may have happened off-thread.
 
-SENTIMENT: A brief assessment of the community sentiment (e.g., "Collaborative", "Heated", "Stalled") and why.
+3. COMMENT AND USER ACCURACY  
+Reference ONLY real usernames and comment numbers that appear in the thread.
+Never fabricate placeholders or generic contributors.
 
-TIMELINE: A chronological summary of the discussion. Use the format "#<number> <User> <action>" for key events.
-Example:
-#1 UserA reported the issue.
-#3 UserB confirmed reproduction.
-#5 UserC proposed a patch.
+4. SENTIMENT BASED ON PARTICIPATION  
+Assess sentiment strictly by observable engagement:
+- One participant only → "Initial report only"
+- Two or more participants with limited interaction → "Minimal engagement"
+- Multiple participants proposing, testing, or refining solutions → "Active collaboration"
+- No recent activity over a significant period → "Stalled (no recent activity)"
 
-LINKS: Relevant resources, documentation, or related issues mentioned. Format as "- [Title](URL): Description".
+5. TIMELINE DISCIPLINE  
+Use actual comment numbers and usernames.
+Each timeline entry MUST be on its own line.
+Do not combine events or summarize multiple comments into one entry.
 
-Format your response exactly as:
+6. LINK HYGIENE  
+Do NOT include the original issue URL.
+Only include external references explicitly mentioned or clearly relevant
+to understanding the accessibility barrier (WCAG, MDN, specs, related issues).
+
+7. STANDARDS BASELINE  
+- Use WCAG 2.2 Level AA as the accessibility baseline
+- Reference WCAG 2.2 Success Criteria only when supported by the issue description
+- Avoid speculative or weak mappings
+
+8. ISSUE TRACKER SOURCE DETECTION AND FORMATTING
+
+Determine the issue tracker platform based on the issue URL or domain present
+in the data provided.
+
+Supported platforms:
+- GitHub (github.com)
+- Drupal (drupal.org)
+
+Once the platform is identified, ALL comment references, user references, and
+links MUST follow the conventions of that platform.
+
+Do NOT mix formats between platforms.
+
+GITHUB FORMATTING RULES (github.com):
+- Comment anchors use the format:
+	https://github.com/{{owner}}/{{repo}}/issues/{{NUMBER}}#issuecomment-{{ID}}
+- User accounts use the format:
+	https://github.com/{{username}}
+- Timeline entries must reference the GitHub username exactly as shown in
+	the comment thread.
+- When linking to a specific comment, use the GitHub issuecomment anchor,
+	not a generic issue link.
+
+DRUPAL FORMATTING RULES (drupal.org):
+- Comment anchors use the format:
+	https://www.drupal.org/project/{{project}}/issues/{{NUMBER}}#comment-{{ID}}
+- User accounts use the format:
+	https://www.drupal.org/u/{{username}}
+- Timeline entries must reference the Drupal username exactly as shown in
+	the issue thread.
+- When linking to a specific comment, use the Drupal comment anchor,
+	not the issue page alone.
+
+PLATFORM CONSISTENCY REQUIREMENT:
+- If the issue originates from github.com, ALL comment and user links must
+	follow GitHub conventions.
+- If the issue originates from drupal.org, ALL comment and user links must
+	follow Drupal conventions.
+- Never assume GitHub-style usernames or comment IDs for Drupal issues, or
+	vice versa.
+
+UNCERTAIN SOURCE HANDLING:
+- If the issue source cannot be confidently determined from the provided data,
+	do NOT generate comment or user links.
+- In that case, reference usernames and comment numbers as plain text only,
+	and explicitly note limited linkability in the TLDR.
+
+
+Provide EXACTLY the following five outputs, in this order and format:
+
+TLDR:
+A concise executive summary (2–3 sentences) describing the accessibility issue and its current observable status. In addition, clearly state the next step or call to action for the community (e.g., needs review, needs testing, waiting for maintainer, stalled, etc.). If status is unclear, say so explicitly.
+
+PROBLEM_STATEMENT:
+A clear, neutral description of the accessibility barrier affecting users. If possible, highlight the latest attempt to resolve the issue (such as a patch, pull request, or workaround) and its status. Reference specific WCAG Success Criteria only if justified by the content of the issue and comments.
+
+SENTIMENT:
+One of the following values ONLY:
+- Active collaboration
+- Minimal engagement
+- Stalled (no recent activity)
+- Initial report only
+
+TIMELINE:
+A chronological list using ONLY actual comment numbers and usernames.
+Each entry on its own line, for example:
+#1 johndoe: Filed the initial accessibility report with reproduction steps.
+#3 janedoe: Confirmed the issue and referenced WCAG 1.1.1.
+#5 johndoe: Tested proposed fix and reported outcome.
+If fewer than three comments exist, be explicit:
+#1 reporter: Filed initial accessibility report. No further discussion recorded.
+
+LINKS:
+Relevant external references only. Do NOT include the original issue URL.
+Format exactly as:
+- [Title](URL): Brief description of relevance
+
+Format your response EXACTLY as follows:
 TLDR: ...
 PROBLEM_STATEMENT: ...
 SENTIMENT: ...

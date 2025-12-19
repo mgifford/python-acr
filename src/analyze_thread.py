@@ -54,6 +54,16 @@ def fetch_github_thread(url):
             headers["Authorization"] = f"token {token}"
             
         all_comments = []
+        pr_count = 0
+        # Fetch PRs linked to this issue
+        pr_api_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/events"
+        try:
+            pr_resp = requests.get(pr_api_url, headers=headers, timeout=30)
+            if pr_resp.status_code == 200:
+                events = pr_resp.json()
+                pr_count = sum(1 for e in events if e.get('event') == 'connected' and e.get('commit_id'))
+        except Exception:
+            pass
         page = 1
         per_page = 100
         
@@ -66,33 +76,45 @@ def fetch_github_thread(url):
                 if response.status_code == 403:
                     print("Tip: Use --github-token <token> to increase your API rate limit.")
                 break
-                
+            
             comments_data = response.json()
             if not comments_data:
                 break
-                
+            
             for idx, comment in enumerate(comments_data):
                 # Calculate global index (1-based)
                 global_idx = (page - 1) * per_page + idx + 1
+                author = comment['user']['login']
+                profile_link = f"https://github.com/{author}"
+                comment_anchor = f"https://github.com/{owner}/{repo}/issues/{issue_number}#issuecomment-{comment['id']}"
                 all_comments.append({
                     'number': str(global_idx), # Use sequential number for readability
                     'original_id': str(comment['id']),
-                    'author': comment['user']['login'],
+                    'author': author,
+                    'profile_link': profile_link,
+                    'comment_anchor': comment_anchor,
                     'content': comment['body'][:1000] if comment['body'] else ""
                 })
             
             if len(comments_data) < per_page:
                 break
-                
+            
             page += 1
         
+        # Count screenshots in comments
+        screenshot_count = 0
+        for c in all_comments:
+            if 'content' in c:
+                if any(ext in c['content'].lower() for ext in ['.png', '.jpg', '.jpeg', '.gif']) or 'img' in c['content'].lower():
+                    screenshot_count += 1
         metadata = {
             'reporter_info': f"GitHub Issue #{issue_number}",
             'followers': "N/A",
             'recent_files': [], # GitHub attachments are harder to list simply
-            'comments': all_comments
+            'comments': all_comments,
+            'num_pull_requests': pr_count,
+            'num_screenshots': screenshot_count
         }
-            
         return metadata
 
     except Exception as e:
@@ -126,23 +148,57 @@ def scrape_drupal_issue(url):
             file_info = f.get_text(strip=True)
             files.append(file_info)
         metadata['recent_files'] = files
+        patch_count = sum(1 for f in files if '.patch' in f or '.diff' in f)
         
-        # Comments - extract comment number, author, and text
+        # Comments - extract comment number, author, profile link, comment anchor, and text
         comments = []
         comment_divs = soup.find_all('div', class_='comment')
+        screenshot_count = 0
         for comment in comment_divs[:200]:  # Increased limit to 200
             comment_num = comment.find('a', class_='permalink')
-            author = comment.find('span', class_='username')
             content = comment.find('div', class_='content')
             
-            if comment_num and author and content:
+            # Extract author from .submitted div (main location for author info)
+            author = None
+            author_link = None
+            submitted = comment.find('div', class_='submitted')
+            if submitted:
+                author_tag = submitted.find('a', class_='username')
+                if author_tag:
+                    author = author_tag.get_text(strip=True)
+                    author_link = author_tag.get('href')
+            
+            # Fallback: try to find author in comment body if not in .submitted
+            if not author and content:
+                author_tag = content.find('a', class_='username')
+                if author_tag:
+                    author = author_tag.get_text(strip=True)
+                    author_link = author_tag.get('href')
+            
+            comment_anchor = comment_num['href'] if comment_num and comment_num.has_attr('href') else None
+            content_text = content.get_text(strip=True)[:1000] if content else ""
+            if any(ext in content_text.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif']) or (content and content.find('img')):
+                screenshot_count += 1
+            
+            # Skip if no author or content
+            if not author or not content:
+                continue
+            
+            # Extract comment number from text like "Comment#31"
+            num_text = comment_num.get_text(strip=True) if comment_num else ""
+            comment_number = num_text.replace('Comment', '').replace('#', '')
+            
+            if comment_number:
                 comments.append({
-                    'number': comment_num.get_text(strip=True).replace('#', ''),
-                    'author': author.get_text(strip=True),
-                    'content': content.get_text(strip=True)[:1000]  # Increased truncation limit
+                    'number': comment_number,
+                    'author': author,
+                    'profile_link': f"https://www.drupal.org{author_link}" if author_link else None,
+                    'comment_anchor': f"https://www.drupal.org{comment_anchor}" if comment_anchor else None,
+                    'content': content_text
                 })
-        
         metadata['comments'] = comments
+        metadata['num_patches'] = patch_count
+        metadata['num_screenshots'] = screenshot_count
         
         return metadata
     except Exception as e:
@@ -160,13 +216,55 @@ def analyze_issue_thread(row, model, url):
         issue_data = scrape_drupal_issue(url)
         
     if not issue_data:
-        return "", "", "", ""
+        return "", "", "", "", "", ""
     
-    # Build comment summary for AI
+    # Engagement metrics
+    comments = issue_data.get('comments', [])
+    num_unique_users = len(set(c['author'] for c in comments))
+    num_comments = len(comments)
+    num_patches = issue_data.get('num_patches') or issue_data.get('num_pull_requests') or 0
+    num_screenshots = issue_data.get('num_screenshots', 0)
     comments_text = "\n".join([
-        f"#{c['number']} by {c['author']}: {c['content'][:300]}"
-        for c in issue_data.get('comments', [])
+        (
+            f"#{c['number']} by {c['author']}"
+            + (f" ({c.get('profile_link')})" if c.get('profile_link') else "")
+            + (f" [anchor]({c.get('comment_anchor')})" if c.get('comment_anchor') else "")
+            + f": {c['content'][:300]}"
+        )
+        for c in comments
     ])
+    engagement_metrics = f"\n\nENGAGEMENT METRICS:\n- Unique users: {num_unique_users}\n- Total comments: {num_comments}\n- Patches/PRs: {num_patches}\n- Screenshots: {num_screenshots}"
+
+    # --- Enhancement: Extract patch/MR/test/review activity and next step ---
+    patch_keywords = ['patch', 'diff', 'pull request', 'merge request', 'mr', 'pr']
+    fail_keywords = ['fail', 'failed', 'error', 'test', 'ci', 'pipeline']
+    review_keywords = ['needs review', 'needs work', 'accessibility review', 'awaiting review', 'needs testing', 'needs change record', 'stalled', 'committed', 'merged', 'closed', 'fixed', 'awaiting maintainer']
+    next_step = None
+    latest_patch = None
+    latest_fail = None
+    latest_review = None
+    for c in reversed(comments):
+        text = c['content'].lower()
+        if not latest_patch and any(k in text for k in patch_keywords):
+            latest_patch = c['content'][:200]
+        if not latest_fail and any(k in text for k in fail_keywords):
+            latest_fail = c['content'][:200]
+        if not latest_review and any(k in text for k in review_keywords):
+            latest_review = c['content'][:200]
+        if not next_step:
+            if latest_review:
+                next_step = latest_review
+            elif latest_fail:
+                next_step = latest_fail
+            elif latest_patch:
+                next_step = latest_patch
+
+    next_step_summary = "\nNEXT STEP: "
+    if next_step:
+        next_step_summary += next_step.replace('\n', ' ').strip()[:300]
+    else:
+        next_step_summary += "No clear next step detected from recent activity."
+
     prompt = f"""
 You are an experienced web accessibility professional reviewing an accessibility
 issue thread to assess the validity of the reported barrier, the quality of discussion,
@@ -178,6 +276,8 @@ ISSUE: {row['Issue Title']}
 REPORTER: {issue_data.get('reporter_info', 'Unknown')}
 FOLLOWERS: {issue_data.get('followers', 'Unknown')}
 RECENT FILES/PATCHES: {', '.join(issue_data.get('recent_files', []))}
+{engagement_metrics}
+{next_step_summary}
 
 COMMENT THREAD:
 {comments_text}
@@ -188,9 +288,7 @@ ORIGINAL DESCRIPTION:
 CRITICAL INSTRUCTIONS:
 
 1. NO INVENTION OR INFERENCE  
-Use ONLY information explicitly present in the issue title, description, and comment
-thread above. Do not infer intent, outcomes, or internal decisions. Do not invent users,
-events, fixes, or timelines.
+Use ONLY information explicitly present in the issue title, description, and comment thread above. Do not infer intent, outcomes, or internal decisions. Do not invent users, events, fixes, or timelines.
 
 2. EXPLICIT DATA LIMITS  
 If discussion is limited, state that clearly using phrases such as:
@@ -206,20 +304,24 @@ Never fabricate placeholders or generic contributors.
 
 4. SENTIMENT BASED ON PARTICIPATION  
 Assess sentiment strictly by observable engagement:
-- One participant only → "Initial report only"
-- Two or more participants with limited interaction → "Minimal engagement"
-- Multiple participants proposing, testing, or refining solutions → "Active collaboration"
-- No recent activity over a significant period → "Stalled (no recent activity)"
+- One participant only -> "Initial report only"
+- Two or more participants with limited interaction -> "Minimal engagement"
+- Multiple participants proposing, testing, or refining solutions -> "Active collaboration"
+- No recent activity over a significant period -> "Stalled (no recent activity)"
 
 5. TIMELINE DISCIPLINE  
-Use actual comment numbers and usernames.
-Each timeline entry MUST be on its own line.
+Use actual comment numbers and usernames. Each timeline entry MUST be on its own line.
 Do not combine events or summarize multiple comments into one entry.
 
 6. LINK HYGIENE  
-Do NOT include the original issue URL.
-Only include external references explicitly mentioned or clearly relevant
-to understanding the accessibility barrier (WCAG, MDN, specs, related issues).
+CRITICAL: Do NOT include links to the primary issue being evaluated (the URL provided above). Never reference the current issue itself.
+DO include:
+- Related issues from the same tracker (if explicitly mentioned in comments)
+- WCAG Success Criteria (w3.org/WAI/WCAG22)
+- ARIA specifications (w3.org/TR/wai-aria)
+- MDN Web Docs for accessibility features
+- External standards or specifications referenced in the discussion
+Only include links that are explicitly mentioned in the issue thread or that clarify the accessibility barrier itself.
 
 7. STANDARDS BASELINE  
 - Use WCAG 2.2 Level AA as the accessibility baseline
@@ -228,73 +330,44 @@ to understanding the accessibility barrier (WCAG, MDN, specs, related issues).
 
 8. ISSUE TRACKER SOURCE DETECTION AND FORMATTING
 
-Determine the issue tracker platform based on the issue URL or domain present
-in the data provided.
+Determine the issue tracker platform based on the issue URL or domain present in the data provided.
 
 Supported platforms:
 - GitHub (github.com)
 - Drupal (drupal.org)
 
-Once the platform is identified, ALL comment references, user references, and
-links MUST follow the conventions of that platform.
+Once the platform is identified, ALL comment references, user references, and links MUST follow the conventions of that platform.
 
 Do NOT mix formats between platforms.
 
 GITHUB FORMATTING RULES (github.com):
-
-- Comment anchors use the format:
-  https://github.com/{{owner}}/{{repo}}/issues/{{NUMBER}}#issuecomment-{{ID}}
-
-- User accounts use the format:
-  https://github.com/{{username}}
-
-- Timeline entries must reference the GitHub username exactly as shown in
-  the comment thread.
-
-- When linking to a specific comment, use the GitHub issuecomment anchor,
-  not a generic issue link.
+- Comment anchors use the format: https://github.com/{{owner}}/{{repo}}/issues/{{NUMBER}}#issuecomment-{{ID}}
+- User accounts use the format: https://github.com/{{username}}
+- Timeline entries must reference the GitHub username exactly as shown in the comment thread.
+- When linking to a specific comment, use the GitHub issuecomment anchor, not a generic issue link.
 
 DRUPAL FORMATTING RULES (drupal.org):
-
-- Comment anchors use the format:
-  https://www.drupal.org/project/{{project}}/issues/{{NUMBER}}#comment-{{ID}}
-
-- User accounts use the format:
-  https://www.drupal.org/u/{{username}}
-
-- Timeline entries must reference the Drupal username exactly as shown in
-  the issue thread.
-
-- When linking to a specific comment, use the Drupal comment anchor,
-  not the issue page alone.
+- Comment anchors use the format: https://www.drupal.org/project/{{project}}/issues/{{NUMBER}}#comment-{{ID}}
+- User accounts use the format: https://www.drupal.org/u/{{username}}
+- Timeline entries must reference the Drupal username exactly as shown in the issue thread.
+- When linking to a specific comment, use the Drupal comment anchor, not the issue page alone.
 
 PLATFORM CONSISTENCY REQUIREMENT:
-
-- If the issue originates from github.com, ALL comment and user links must
-  follow GitHub conventions.
-- If the issue originates from drupal.org, ALL comment and user links must
-  follow Drupal conventions.
-- Never assume GitHub-style usernames or comment IDs for Drupal issues, or
-  vice versa.
+- If the issue originates from github.com, ALL comment and user links must follow GitHub conventions.
+- If the issue originates from drupal.org, ALL comment and user links must follow Drupal conventions.
+- Never assume GitHub-style usernames or comment IDs for Drupal issues, or vice versa.
 
 UNCERTAIN SOURCE HANDLING:
-
-- If the issue source cannot be confidently determined from the provided data,
-  do NOT generate comment or user links.
-- In that case, reference usernames and comment numbers as plain text only,
-  and explicitly note limited linkability in the TLDR.
-
+- If the issue source cannot be confidently determined from the provided data, do NOT generate comment or user links.
+- In that case, reference usernames and comment numbers as plain text only, and explicitly note limited linkability in the TLDR.
 
 Provide EXACTLY the following five outputs, in this order and format:
 
 TLDR:
-A concise executive summary (2–3 sentences) describing the accessibility issue
-and its current observable status. If status is unclear, say so explicitly.
+A concise executive summary (2-3 sentences) describing the accessibility issue and its current observable status. In addition, clearly state the next step or call to action for the community (e.g., needs review, needs testing, waiting for maintainer, stalled, etc.). If status is unclear, say so explicitly. Always include the latest actionable next step or technical status if available.
 
 PROBLEM_STATEMENT:
-A clear, neutral description of the accessibility barrier affecting users.
-Reference specific WCAG Success Criteria only if justified by the content of
-the issue and comments.
+A clear, neutral description of the accessibility barrier affecting users. If possible, highlight the latest attempt to resolve the issue (such as a patch, pull request, or workaround) and its status. Reference specific WCAG Success Criteria only if justified by the content of the issue and comments. Always mention the most recent technical or review activity if available.
 
 SENTIMENT:
 One of the following values ONLY:
@@ -329,6 +402,7 @@ SENTIMENT: ...
 TIMELINE: ...
 LINKS: ...
 """
+    
     try:
         resp = model.generate_content(prompt)
         text = resp.text
@@ -347,13 +421,8 @@ LINKS: ...
         for line in lines:
             if line.startswith('TLDR:'):
                 if current_section and section_content:
-                    # Save previous section
                     content = ' '.join(section_content).strip()
                     if current_section == 'TLDR': tldr = content
-                    elif current_section == 'PROBLEM_STATEMENT': problem = content
-                    elif current_section == 'SENTIMENT': sentiment = content
-                    elif current_section == 'TIMELINE': timeline = content
-                    elif current_section == 'LINKS': links = content
                 current_section = 'TLDR'
                 section_content = [line.replace('TLDR:', '').strip()]
             elif line.startswith('PROBLEM_STATEMENT:'):
@@ -389,7 +458,7 @@ LINKS: ...
             if current_section == 'LINKS':
                 links = content
         
-        return tldr, problem, sentiment, timeline, links
+        return tldr, problem, sentiment, timeline, links, engagement_metrics
         
     except Exception as e:
         error_str = str(e)
@@ -404,7 +473,7 @@ LINKS: ...
         error_msg = error_str.split('\n')[0]
         if len(error_msg) > 200: error_msg = error_msg[:200] + "..."
         print(f"Error analyzing thread: {error_msg}")
-        return "", "", "", ""
+        return "", "", "", "", "", ""
 
 def run(results_dir, ai_config, limit=None):
     """Analyze issue threads for all issues."""
@@ -469,10 +538,11 @@ def run(results_dir, ai_config, limit=None):
             issue_num = f"#{issue_num} "
         
             print(f"Processing {issue_num}{idx+1}/{len(df)}: {row['Issue Title'][:50]}...")
+
         print(f"🔗 URL: {issue_url}")
         
         try:
-            tldr, problem, sentiment, timeline, links = analyze_issue_thread(row, model, issue_url)
+            tldr, problem, sentiment, timeline, links, engagement_metrics = analyze_issue_thread(row, model, issue_url)
             
             df.at[idx, 'thread_tldr'] = tldr
             df.at[idx, 'thread_problem'] = problem
@@ -483,6 +553,8 @@ def run(results_dir, ai_config, limit=None):
             # Only display if we got actual content
             if tldr or problem or sentiment or timeline or links:
                 print(f"\n{'='*80}")
+                print(engagement_metrics)
+                print(f"{'='*80}")
                 print(f"📋 TLDR: {tldr[:200]}..." if len(tldr) > 200 else f"📋 TLDR: {tldr}")
                 print(f"\n⚠️ PROBLEM: {problem[:150]}..." if len(problem) > 150 else f"⚠️ PROBLEM: {problem}")
                 print(f"\n💬 SENTIMENT: {sentiment}")

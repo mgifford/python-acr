@@ -161,6 +161,9 @@ def run(results_dir, ai_config, limit=None):
         model = OllamaModel(model_name=target_model)
     else:
         print("Using Gemini backend")
+        if genai is None:
+            print("ERROR: google-generativeai is not installed. Please install it with 'pip install google-generativeai' to use the Gemini backend.")
+            sys.exit(1)
         genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
         # Ensure model name has models/ prefix
         if model_name:

@@ -310,7 +310,12 @@
                 <div class="content-column">
                 <!-- 1. Issue Details -->
                 <div class="card">
-                    <h2>Issue Details</h2>
+                    <h2 style="display: flex; align-items: center; gap: 10px;">
+                        Issue Details
+                        <button id="copyContentColumnBtn" title="Copy all details in this column" style="margin-left: 8px; padding: 4px 10px; font-size: 0.9em; background: #e0e7ef; color: #2563eb; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer;">
+                            📋 Copy All
+                        </button>
+                    </h2>
                     <div class="info-grid">
                         <div class="info-item"><label>ID</label><div id="displayId"></div></div>
                         <div class="info-item"><label>Project</label><div id="displayProject"></div></div>
@@ -426,6 +431,34 @@
     </div>
 
     <script>
+        // Copy Content Column Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const copyBtn = document.getElementById('copyContentColumnBtn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', function() {
+                    const contentColumn = document.querySelector('.content-column');
+                    if (contentColumn) {
+                        // Get all visible text (including headings, labels, and values)
+                        let text = '';
+                        // Clone to avoid copying the button itself
+                        const clone = contentColumn.cloneNode(true);
+                        // Remove the copy button from the clone
+                        const btn = clone.querySelector('#copyContentColumnBtn');
+                        if (btn) btn.remove();
+                        // Get text content
+                        text = clone.innerText || clone.textContent || '';
+                        // Copy to clipboard
+                        navigator.clipboard.writeText(text).then(() => {
+                            copyBtn.textContent = '✅ Copied!';
+                            setTimeout(() => { copyBtn.textContent = '📋 Copy All'; }, 1200);
+                        }, () => {
+                            copyBtn.textContent = '❌ Failed';
+                            setTimeout(() => { copyBtn.textContent = '📋 Copy All'; }, 1200);
+                        });
+                    }
+                });
+            }
+        });
         // Configuration
         const DATA_ENDPOINT = '/data/llm_feedback_data.json';
         let allData = [];
@@ -534,56 +567,150 @@
         }
 
         async function loadDatasets() {
-            try {
-                console.log("Loading datasets...");
-                const response = await fetch('/api/datasets');
-                console.log("Response status:", response.status);
-                
-                if (response.ok) {
-                    const files = await response.json();
-                    console.log("Found files:", files);
-                    const selector = document.getElementById('datasetSelector');
-                    
-                    if (!selector) {
-                        console.error("Dataset selector not found!");
-                        return;
-                    }
-                    
-                    selector.innerHTML = '';
-                    
-                    if (files.length === 0) {
-                        const option = document.createElement('option');
-                        option.text = "No datasets found";
-                        selector.appendChild(option);
-                        return;
+            console.log("Loading datasets...");
+
+            // Helper: try the dynamic API first (works when running local server),
+            // otherwise fall back to a static datasets.json file (works on GitHub Pages).
+            async function tryApiThenStatic() {
+                    // 1) Try local API (works when you run `run_server.py` locally)
+                    try {
+                        const response = await fetch('/api/datasets');
+                        if (response.ok) {
+                            const files = await response.json();
+                            if (files && files.length) return files;
+                        }
+                    } catch (e) {
+                        // ignore and try static discovery
                     }
 
-                    files.forEach(file => {
-                        const option = document.createElement('option');
-                        option.value = file;
-                        const parts = file.split('/');
-                        const name = parts[parts.length - 1];
-                        const folder = parts.length > 2 ? parts[parts.length - 2] : '';
-                        option.text = folder ? `${folder}/${name}` : name;
-                        selector.appendChild(option);
-                    });
-                    
-                    if (files.length > 0) {
-                        selector.value = files[0];
-                        loadSelectedDataset(files[0]);
+                    // 2) Try to discover a results index (if you pre-generate one for GH Pages)
+                    //    e.g. results/index.json listing available result CSVs. This is optional
+                    //    but recommended if you want GH Pages to auto-discover available runs.
+                    const origin = window.location.origin;
+                    const repoBase = getRepoBase();
+                    const indexCandidates = [];
+                    if (repoBase) indexCandidates.push(`${origin}/${repoBase}results/index.json`);
+                    indexCandidates.push(`${origin}/python-acr/results/index.json`);
+                    indexCandidates.push('results/index.json');
+                    indexCandidates.push('./results/index.json');
+
+                    for (const ic of indexCandidates) {
+                        try {
+                            const rr = await fetch(ic);
+                            if (rr.ok) {
+                                try {
+                                    const parsed = await rr.json();
+                                    if (Array.isArray(parsed) && parsed.length) {
+                                        // If it's an array containing a single object with a 'datasets' key,
+                                        // normalize to that inner array (this supports datasets.json fallback format)
+                                        if (parsed.length === 1 && parsed[0] && typeof parsed[0] === 'object' && parsed[0].datasets) {
+                                            return parsed[0].datasets;
+                                        }
+                                        return parsed;
+                                    }
+                                    // If parsed is an object with datasets, normalize
+                                    if (parsed && parsed.datasets) return parsed.datasets;
+                                } catch (e) {
+                                    console.error('Failed parsing results/index.json at', ic, e);
+                                }
+                            }
+                        } catch (e) {
+                            // continue
+                        }
                     }
-                } else {
-                    console.error("Failed to load datasets, status:", response.status);
-                    const selector = document.getElementById('datasetSelector');
-                    selector.innerHTML = '<option>Error loading datasets</option>';
-                }
-            } catch (e) {
-                console.error("Failed to load datasets", e);
-                const selector = document.getElementById('datasetSelector');
-                if (selector) {
-                    selector.innerHTML = '<option>Error: ' + e.message + '</option>';
-                }
+
+                    // 3) Finally, fall back to the static fallback `datasets.json` committed with the site
+                    const candidates = [];
+                    if (repoBase) candidates.push(`${origin}/${repoBase}datasets.json`);
+                    candidates.push(`${origin}/python-acr/datasets.json`);
+                    candidates.push('datasets.json');
+                    candidates.push('./datasets.json');
+
+                    for (const c of candidates) {
+                        try {
+                            const rr = await fetch(c);
+                            if (rr.ok) {
+                                try {
+                                    const parsed = await rr.json();
+                                    // Accept either the old array format or new fallback object
+                                    if (Array.isArray(parsed)) {
+                                        if (parsed.length === 1 && parsed[0] && typeof parsed[0] === 'object' && parsed[0].datasets) {
+                                            return parsed[0].datasets;
+                                        }
+                                        return parsed;
+                                    }
+                                    if (parsed && parsed.datasets) return parsed.datasets;
+                                } catch (e) {
+                                    console.error('Failed parsing datasets.json at', c, e);
+                                }
+                            }
+                        } catch (e) {
+                            // try next candidate
+                        }
+                    }
+
+                    return [];
             }
+
+            let files = await tryApiThenStatic();
+            // Normalize returned files into an array of string paths
+            function normalizeFiles(raw) {
+                if (!raw) return [];
+                // If object with datasets
+                if (!Array.isArray(raw) && raw.datasets) {
+                    raw = raw.datasets;
+                }
+                if (!Array.isArray(raw)) return [];
+                const out = [];
+                for (const item of raw) {
+                    if (!item) continue;
+                    if (typeof item === 'string') { out.push(item); continue; }
+                    if (Array.isArray(item)) {
+                        // flatten nested arrays
+                        for (const sub of item) if (typeof sub === 'string') out.push(sub);
+                        continue;
+                    }
+                    if (typeof item === 'object') {
+                        // common fields to check
+                        if (item.path) out.push(item.path);
+                        else if (item.file) out.push(item.file);
+                        else if (item.url) out.push(item.url);
+                        else if (item.datasets && Array.isArray(item.datasets)) out.push(...item.datasets);
+                        // otherwise skip unknown object shape
+                    }
+                }
+                return out;
+            }
+
+            files = normalizeFiles(files);
+            console.log('Found files:', files);
+
+            const selector = document.getElementById('datasetSelector');
+            if (!selector) {
+                console.error('Dataset selector not found!');
+                return;
+            }
+
+            selector.innerHTML = '';
+            if (!files || files.length === 0) {
+                const option = document.createElement('option');
+                option.text = 'No datasets found';
+                selector.appendChild(option);
+                return;
+            }
+
+            files.forEach(file => {
+                const option = document.createElement('option');
+                option.value = file;
+                const parts = file.split('/');
+                const name = parts[parts.length - 1];
+                const folder = parts.length > 2 ? parts[parts.length - 2] : '';
+                option.text = folder ? `${folder}/${name}` : name;
+                selector.appendChild(option);
+            });
+
+            selector.value = files[0];
+            loadSelectedDataset(files[0]);
         }
 
         async function loadSelectedDataset(file) {
@@ -593,11 +720,47 @@
             statusEl.style.display = 'block';
             
             try {
-                const response = await fetch(`/data/load?file=${encodeURIComponent(file)}`);
-                if (!response.ok) throw new Error("Failed to load file");
-                
-                const text = await response.text();
-                allData = parseCSV(text);
+                // Attempt several candidate ways to fetch the CSV so it works under GH Pages
+                // (where the site is at /python-acr/) and locally (where you may run a server
+                // that exposes files at the repo root or via `run_server.py`).
+                const origin = window.location.origin;
+                const candidates = [];
+
+                // If file is already an absolute URL, use it directly
+                if (/^https?:\/\//i.test(file)) candidates.push(file);
+
+                // Normalize file to remove leading slash when building repo-relative paths
+                const fileNoLead = file.replace(/^\//, '');
+
+                // origin + repoBase + file
+                const repoBase = getRepoBase();
+                if (repoBase) candidates.push(`${origin}/${repoBase}${fileNoLead}`);
+
+                // origin + explicit repo path
+                candidates.push(`${origin}/python-acr/${fileNoLead}`);
+
+                // repo-relative
+                candidates.push(fileNoLead);
+                candidates.push(`./${fileNoLead}`);
+
+                let lastErr = null;
+                for (const c of candidates) {
+                    try {
+                        const r = await fetch(c);
+                        if (r.ok) {
+                            const text = await r.text();
+                            // success
+                            allData = parseCSV(text);
+                            break;
+                        }
+                    } catch (e) {
+                        lastErr = e;
+                    }
+                }
+
+                if (!allData || allData.length === 0) {
+                    throw new Error('Failed to load file via any candidate path' + (lastErr ? ': ' + lastErr.message : ''));
+                }
                 
                 if (!allData || allData.length === 0) throw new Error("File is empty.");
 
@@ -988,6 +1151,20 @@
             }
             
             return htmlLines.join('\n');
+        }
+
+        // Compute repo base from location.pathname for reuse across functions
+        function getRepoBase() {
+            try {
+                const path = window.location.pathname || '/';
+                const parts = path.split('/').filter(Boolean);
+                if (parts.length > 0) {
+                    return parts[0] + '/';
+                }
+            } catch (e) {
+                // ignore
+            }
+            return '';
         }
 
         function renderJourney(text, issueUrl) {
