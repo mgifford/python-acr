@@ -394,13 +394,20 @@ Format exactly as:
 
 - [Title](URL): Brief description of relevance
 
-Format your response EXACTLY as follows:
+Format your response EXACTLY as follows. Respond with ONLY these five lines, nothing else:
 
 TLDR: ...
 PROBLEM_STATEMENT: ...
 SENTIMENT: ...
 TIMELINE: ...
 LINKS: ...
+
+Example:
+TLDR: Summary here.
+PROBLEM_STATEMENT: Problem here.
+SENTIMENT: Active collaboration
+TIMELINE: #1 user: did X. #2 user: replied.
+LINKS: - [Reference](https://example.com): Why it matters
 """
     
     try:
@@ -457,6 +464,12 @@ LINKS: ...
             content = ' '.join(section_content).strip()
             if current_section == 'LINKS':
                 links = content
+
+        # If parsing failed, emit the raw model text for debugging once per issue
+        if not any([tldr, problem, sentiment, timeline, links]):
+            print("⚙️  Debug: model response did not match expected format. Raw output:")
+            print(text)
+            print("⚙️  End debug output\n")
         
         return tldr, problem, sentiment, timeline, links, engagement_metrics
         
