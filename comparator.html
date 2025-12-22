@@ -17,7 +17,7 @@
         
         /* Headers & Content */
         .panel-header { padding: 12px; font-weight: bold; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #fff; }
-        .panel-content { flex: 1; overflow-y: auto; padding: 15px; font-size: 0.95em; line-height: 1.6; white-space: pre-wrap; }
+        .panel-content { flex: 1; overflow-y: auto; padding: 15px; font-size: 0.95em; line-height: 1.6; white-space: normal; }
         
         /* Model Specific Colors */
         .model-0-header { border-top: 4px solid #ef4444; } /* Red */
@@ -35,6 +35,20 @@
         .vote-btn { width: 100%; padding: 8px; border: 1px solid #cbd5e1; background: white; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .vote-btn:hover { background: #e2e8f0; }
         .vote-btn.selected { background: #3b82f6; color: white; border-color: #3b82f6; }
+
+        .context-content { display: flex; flex-direction: column; gap: 12px; }
+        .context-section { display: flex; flex-direction: column; gap: 4px; }
+        .context-title { font-size: 1.05em; font-weight: 600; color: #0f172a; }
+        .context-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+        .meta-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 2px; }
+        .meta-value { font-weight: 600; color: #0f172a; }
+        .section-label { font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 4px; }
+        .section-body { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 10px; min-height: 48px; }
+        .rich-text p { margin: 0 0 6px 0; }
+        .rich-text ul { margin: 0 0 6px 20px; }
+        .model-section { margin-bottom: 16px; }
+        .model-empty { background: #fef2f2; border: 1px dashed #fecaca; border-radius: 8px; padding: 12px; color: #b91c1c; }
+        .context-footer { padding: 15px; border-top: 1px solid #ddd; font-size: 0.85em; background: #fff; }
 
     </style>
 </head>
@@ -72,8 +86,44 @@
     <div class="grid-container" id="main-grid">
         <div class="panel context-panel">
             <div class="panel-header">Context & Inputs</div>
-            <div class="panel-content" id="context-text"></div>
-            <div style="padding:15px; border-top:1px solid #ddd; font-size:0.85em;">
+            <div class="panel-content context-content">
+                <div class="context-title" id="context-title">Issue context</div>
+                <div class="context-meta">
+                    <div>
+                        <div class="meta-label">Project</div>
+                        <div class="meta-value" id="context-project">—</div>
+                    </div>
+                    <div>
+                        <div class="meta-label">Status</div>
+                        <div class="meta-value" id="context-status">—</div>
+                    </div>
+                    <div>
+                        <div class="meta-label">Priority</div>
+                        <div class="meta-value" id="context-priority">—</div>
+                    </div>
+                    <div>
+                        <div class="meta-label">Component</div>
+                        <div class="meta-value" id="context-component">—</div>
+                    </div>
+                    <div>
+                        <div class="meta-label">Version</div>
+                        <div class="meta-value" id="context-version">—</div>
+                    </div>
+                    <div>
+                        <div class="meta-label">Created</div>
+                        <div class="meta-value" id="context-created">—</div>
+                    </div>
+                    <div>
+                        <div class="meta-label">WCAG</div>
+                        <div class="meta-value" id="context-wcag">—</div>
+                    </div>
+                </div>
+                <div class="context-section">
+                    <div class="section-label">Description</div>
+                    <div class="section-body rich-text" id="context-text"></div>
+                </div>
+            </div>
+            <div class="context-footer">
                 <div>ID: <strong id="item-id"></strong></div>
                 <div style="margin-top:5px;"><a id="source-link" href="#" target="_blank">🔗 View Source URL</a></div>
             </div>
@@ -92,6 +142,190 @@
         let allModels = [];
         let selectedModels = [];
         let modelDropdownOpen = false;
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function formatReport(text) {
+            if (!text) return "";
+            const lines = String(text).split('\n');
+            let inUnorderedList = false;
+            let inOrderedList = false;
+            let inBlockquote = false;
+            const htmlLines = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const trimmedLine = line.trim();
+
+                if (/^(#{1,6})\s+(.+)$/.test(trimmedLine)) {
+                    if (inUnorderedList) { htmlLines.push('</ul>'); inUnorderedList = false; }
+                    if (inOrderedList) { htmlLines.push('</ol>'); inOrderedList = false; }
+                    if (inBlockquote) { htmlLines.push('</blockquote>'); inBlockquote = false; }
+                    const match = trimmedLine.match(/^(#{1,6})\s+(.+)$/);
+                    const level = match[1].length;
+                    const content = escapeHtml(match[2]);
+                    htmlLines.push(`<h${level} style="margin:8px 0 5px 0; font-weight:bold; color:#1e293b;">${content}</h${level}>`);
+                } else if (/^>\s*/.test(trimmedLine)) {
+                    if (inUnorderedList) { htmlLines.push('</ul>'); inUnorderedList = false; }
+                    if (inOrderedList) { htmlLines.push('</ol>'); inOrderedList = false; }
+                    if (!inBlockquote) {
+                        htmlLines.push('<blockquote style="margin:10px 0; padding:10px 15px; border-left:4px solid #cbd5e1; background:#f8fafc; color:#475569;">');
+                        inBlockquote = true;
+                    }
+                    const content = trimmedLine.replace(/^>\s*/, '');
+                    const afterQuote = line.substring(line.indexOf('>') + 1);
+                    if (/^\s{4,}/.test(afterQuote) || afterQuote.startsWith('\t')) {
+                        htmlLines.push(`<div style="margin-left:20px; font-family:monospace; white-space:pre-wrap;">${escapeHtml(content)}</div>`);
+                    } else if (content) {
+                        htmlLines.push(`<div>${escapeHtml(content)}</div>`);
+                    } else {
+                        htmlLines.push('<div><br></div>');
+                    }
+                } else if (/^\d+\.\s+/.test(trimmedLine)) {
+                    if (inUnorderedList) { htmlLines.push('</ul>'); inUnorderedList = false; }
+                    if (inBlockquote) { htmlLines.push('</blockquote>'); inBlockquote = false; }
+                    if (!inOrderedList) {
+                        htmlLines.push('<ol style="margin:5px 0; padding-left:20px;">');
+                        inOrderedList = true;
+                    }
+                    const content = trimmedLine.replace(/^\d+\.\s+/, '');
+                    const processed = escapeHtml(content).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    htmlLines.push(`<li style="margin-bottom:3px;">${processed}</li>`);
+                } else if (/^[\*\-]\s+/.test(trimmedLine)) {
+                    if (inOrderedList) { htmlLines.push('</ol>'); inOrderedList = false; }
+                    if (inBlockquote) { htmlLines.push('</blockquote>'); inBlockquote = false; }
+                    if (!inUnorderedList) {
+                        htmlLines.push('<ul style="margin:5px 0; padding-left:20px; list-style-type:disc;">');
+                        inUnorderedList = true;
+                    }
+                    const content = trimmedLine.replace(/^[\*\-]\s+/, '');
+                    const processed = escapeHtml(content).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    htmlLines.push(`<li style="margin-bottom:3px;">${processed}</li>`);
+                } else {
+                    if (inBlockquote && trimmedLine === '') {
+                        if (i + 1 < lines.length && /^>\s*/.test(lines[i + 1].trim())) {
+                            htmlLines.push('<div><br></div>');
+                            continue;
+                        } else {
+                            htmlLines.push('</blockquote>');
+                            inBlockquote = false;
+                        }
+                    }
+                    if (inUnorderedList) { htmlLines.push('</ul>'); inUnorderedList = false; }
+                    if (inOrderedList) { htmlLines.push('</ol>'); inOrderedList = false; }
+                    if (trimmedLine) {
+                        const processedLine = escapeHtml(line).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        htmlLines.push(processedLine);
+                    } else {
+                        if (htmlLines.length > 0 && htmlLines[htmlLines.length - 1] !== '<br>') {
+                            htmlLines.push('<br>');
+                        }
+                    }
+                }
+            }
+
+            if (inUnorderedList) { htmlLines.push('</ul>'); }
+            if (inOrderedList) { htmlLines.push('</ol>'); }
+            if (inBlockquote) { htmlLines.push('</blockquote>'); }
+            while (htmlLines.length > 0 && htmlLines[htmlLines.length - 1] === '<br>') {
+                htmlLines.pop();
+            }
+            return htmlLines.join('\n');
+        }
+
+        function renderJourney(text, issueUrl) {
+            if (!text) return "No thread analysis available";
+            let html = escapeHtml(text);
+            html = html.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:#2563eb; text-decoration:underline;">$1</a>');
+            const parts = html.split(/(?=#\d+)/);
+            if (parts.length > 1) {
+                return '<div class="journey-list">' + parts.map(p => {
+                    const trimmed = p.trim();
+                    if (!trimmed) return '';
+                    const match = trimmed.match(/^(#\d+)(.*)/s);
+                    if (match) {
+                        const id = match[1];
+                        const content = match[2].trim();
+                        const linkHref = issueUrl ? `${issueUrl}${id}` : '#';
+                        return `<div class="journey-item" style="margin-bottom:2px;"><a href="${linkHref}" target="_blank" class="journey-id" style="font-weight:bold; color:#2563eb; margin-right:5px; text-decoration:none;">${id}</a><span class="journey-content">${content}</span></div>`;
+                    }
+                    return `<div class="journey-item" style="margin-bottom:2px;">${trimmed}</div>`;
+                }).join('') + '</div>';
+            }
+            return html;
+        }
+
+        function renderList(text) {
+            if (!text) return "";
+            let html = escapeHtml(text);
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:#2563eb; text-decoration:underline;">$1</a>');
+            if (html.includes('\n')) {
+                const lines = html.split('\n');
+                const listItems = lines.map(line => {
+                    const trimmed = line.trim();
+                    const match = trimmed.match(/^[\*\-]\s+(.*)/);
+                    if (match) {
+                        return `<li>${match[1].trim()}</li>`;
+                    }
+                    return trimmed ? `<p>${trimmed}</p>` : '';
+                }).join('');
+                if (listItems.includes('<li>')) {
+                    return `<ul style="padding-left:20px; margin:0;">${listItems}</ul>`;
+                }
+                return listItems;
+            }
+            if (html.match(/(?:^|\s)[\*\-]\s/)) {
+                let list = html.replace(/^[\*\-]\s+/, '');
+                const items = list.split(/\s+[\*\-]\s+/);
+                const content = items.map(item => `<li>${item.trim()}</li>`).join('');
+                return `<ul style="padding-left:20px; margin:0;">${content}</ul>`;
+            }
+            return html;
+        }
+
+        function setContextField(id, value) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const text = value && String(value).trim() ? value : '—';
+            el.textContent = text;
+        }
+
+        function buildModelContent(model, issueUrl) {
+            if (!model) {
+                return '<div class="model-empty">This scan did not produce output for this issue.</div>';
+            }
+            const sections = [];
+            const addSection = (label, value, renderer = formatReport) => {
+                const text = value && String(value).trim() ? String(value) : '';
+                if (!text) return;
+                sections.push(`
+                    <div class="model-section">
+                        <div class="section-label">${label}</div>
+                        <div class="section-body rich-text">${renderer(text, issueUrl)}</div>
+                    </div>
+                `);
+            };
+
+            addSection('WCAG Mapping', model?.ai_wcag, escapeHtml);
+            addSection('ACR Note', model?.acr_note || model?.text);
+            addSection('Developer Note', model?.dev_note);
+            addSection('Thread TL;DR', model?.thread_tldr);
+            addSection('Thread Problem', model?.thread_problem);
+            addSection('Thread Sentiment', model?.thread_sentiment);
+            addSection('Thread Timeline', model?.thread_timeline, renderJourney);
+            addSection('Thread Links', model?.thread_links, renderList);
+            addSection('Thread TODO', model?.thread_todo);
+            addSection('Thread Journey', model?.thread_journey, renderJourney);
+
+            if (sections.length === 0) {
+                const fallback = model?.text ? formatReport(model.text) : '';
+                return `<div class="model-empty">${fallback || 'No AI analysis captured for this scan.'}</div>`;
+            }
+            return sections.join('');
+        }
 
         function buildAssetUrl(path) {
             const cleaned = (path || '').replace(/^\/+/, '');
@@ -140,7 +374,9 @@
                 allData = await filterModelsByExistence(rawData);
                 // Only include projects that have at least one valid model
                 projects = Object.keys(allProjectsObj).filter(p =>
-                    allData.some(item => item.models.some(m => m.model_name.startsWith(p + '-')))
+                    allData.some(item =>
+                        item.project === p || item.models.some(m => m.model_name.startsWith(p + '-'))
+                    )
                 );
                 const select = document.getElementById('project-select');
                 select.innerHTML = '';
@@ -188,6 +424,12 @@
         function onModelCheckboxChange() {
             const checkboxes = document.querySelectorAll('#model-select-list input[type=checkbox]');
             selectedModels = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+            if (selectedModels.length === 0 && allModels.length > 0) {
+                selectedModels = [...allModels];
+                checkboxes.forEach(cb => {
+                    cb.checked = selectedModels.includes(cb.value);
+                });
+            }
             updateModelSummary();
             filterDataByProject(false);
         }
@@ -217,12 +459,17 @@
 
         function filterDataByProject(resetModels = true) {
             // Get all models for this project
-            const projectItems = allData.filter(item => item.models.some(m => m.model_name.startsWith(selectedProject + '-')));
+            const projectItems = allData.filter(item => {
+                if (item.project) return item.project === selectedProject;
+                return item.models.some(m => m.model_name.startsWith(selectedProject + '-'));
+            });
             // Collect all unique model names for this project
-            let modelSet = new Set();
+            const modelSet = new Set();
             projectItems.forEach(item => {
                 item.models.forEach(m => {
-                    if (m.model_name.startsWith(selectedProject + '-')) modelSet.add(m.model_name);
+                    if (item.project === selectedProject || m.model_name.startsWith(selectedProject + '-')) {
+                        modelSet.add(m.model_name);
+                    }
                 });
             });
             allModels = Array.from(modelSet);
@@ -260,7 +507,7 @@
                 updateModelSummary();
             } else {
                 modelSelectDiv.style.display = 'none';
-                selectedModels = allModels;
+                selectedModels = [...allModels];
             }
             // Filter data to only include selected models
             data = projectItems.map(item => {
@@ -272,7 +519,8 @@
             }).filter(item => item.models.length > 0);
             index = 0;
             if (data.length > 0) {
-                generateLayout(data[0].models);
+                document.getElementById('main-grid').style.display = 'flex';
+                generateLayout(getTemplateModels());
                 render();
             } else {
                 document.getElementById('main-grid').style.display = 'none';
@@ -288,21 +536,35 @@
             }
         });
 
+        function getTemplateModels() {
+            if (!selectedModels || selectedModels.length === 0) return [];
+            return selectedModels.map(name => {
+                const source = (data.find(item => item.models.some(m => m.model_name === name)) ||
+                    allData.find(item => item.models.some(m => m.model_name === name)));
+                if (source) {
+                    return source.models.find(m => m.model_name === name) || { model_name: name };
+                }
+                return { model_name: name };
+            });
+        }
+
         function generateLayout(models) {
             const grid = document.getElementById('main-grid');
             // Keep context panel, remove old model panels if any
             while (grid.children.length > 1) { grid.removeChild(grid.lastChild); }
             models.forEach((model, i) => {
+                const modelName = model?.model_name || selectedModels[i] || `Model ${i + 1}`;
                 const div = document.createElement('div');
                 div.className = `panel model-${i}-header`;
+                div.setAttribute('data-model-panel', i);
                 div.innerHTML = `
                     <div class="panel-header">
-                        <span>${model.model_name}</span>
+                        <span>${escapeHtml(modelName)}</span>
                         <span style="font-size:0.8em; color:#666;">Model ${i+1}</span>
                     </div>
-                    <div class="panel-content" id="text-model-${i}"></div>
+                    <div class="panel-content" id="model-content-${i}"></div>
                     <div class="vote-footer">
-                        <button class="vote-btn" id="btn-vote-${i}" onclick="vote('${model.model_name}')">
+                        <button class="vote-btn" id="btn-vote-${i}" data-model="${escapeHtml(modelName)}" onclick="vote(this.dataset.model)">
                             Vote for Model ${i+1}
                         </button>
                     </div>
@@ -314,23 +576,53 @@
         function render() {
             const item = data[index];
             document.getElementById('progress').textContent = `${index + 1} of ${data.length}`;
-            document.getElementById('context-text').textContent = item.context;
-            document.getElementById('item-id').textContent = item.id;
-            document.getElementById('source-link').href = item.source_url || '#';
+            const description = item.description || item.context || '';
+            const formattedDescription = formatReport(description);
+            document.getElementById('context-text').innerHTML = formattedDescription || '<em>No description provided.</em>';
+            document.getElementById('context-title').textContent = item.title || `Issue ${item.id}`;
+            setContextField('context-project', item.project || selectedProject || '—');
+            setContextField('context-status', item.status || 'Unknown');
+            setContextField('context-priority', item.priority || 'Unknown');
+            setContextField('context-component', item.component || '—');
+            setContextField('context-version', item.version || '—');
+            setContextField('context-created', item.created || '—');
+            setContextField('context-wcag', item.wcag_sc || '—');
 
-            // Render Model Texts
-            item.models.forEach((model, i) => {
-                document.getElementById(`text-model-${i}`).textContent = model.text;
-            });
+            document.getElementById('item-id').textContent = item.id || '—';
+            const url = item.source_url || '';
+            const sourceLink = document.getElementById('source-link');
+            if (url) {
+                sourceLink.href = url;
+                sourceLink.textContent = '🔗 View Source URL';
+                sourceLink.removeAttribute('aria-disabled');
+            } else {
+                sourceLink.href = '#';
+                sourceLink.textContent = 'No source link available';
+                sourceLink.setAttribute('aria-disabled', 'true');
+            }
+
+            const totalPanels = selectedModels.length;
+            for (let i = 0; i < totalPanels; i++) {
+                const modelName = selectedModels[i];
+                const modelData = item.models.find(m => m.model_name === modelName);
+                const container = document.getElementById(`model-content-${i}`);
+                if (container) {
+                    container.innerHTML = buildModelContent(modelData, item.source_url);
+                }
+                const voteBtn = document.getElementById(`btn-vote-${i}`);
+                if (voteBtn) {
+                    voteBtn.dataset.model = modelName;
+                }
+            }
 
             // Restore Vote
-            const saved = results[item.id];
             document.querySelectorAll('.vote-btn').forEach(b => b.classList.remove('selected'));
+            const saved = results[item.id];
             if (saved) {
-                // Find button that corresponds to the saved model name
-                item.models.forEach((m, i) => {
-                    if(m.model_name === saved.choice) {
-                        document.getElementById(`btn-vote-${i}`).classList.add('selected');
+                selectedModels.forEach((name, i) => {
+                    if (name === saved.choice) {
+                        const btn = document.getElementById(`btn-vote-${i}`);
+                        if (btn) btn.classList.add('selected');
                     }
                 });
             }

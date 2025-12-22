@@ -1,65 +1,36 @@
 # AGENTS.md
 
 ## Project Overview
-This project is an AI Accessibility Validator (`python-acr`) that automates the creation of Accessibility Conformance Reports (ACR) / VPATs. It extracts issues from issue trackers (Drupal.org, GitHub), summarizes them using AI models (Ollama, Gemini), and generates reports.
+This project is an AI Accessibility Validator (`python-acr`) that assists in the creation of Accessibility Conformance Reports (ACR) / VPAT-style documentation.
 
-## Environment Setup
-- **Python Version**: Python 3.x
-- **Virtual Environment**: Always use a virtual environment (`venv`).
-  ```bash
-  python3 -m venv venv
-  source venv/bin/activate
-  ```
-- **Dependencies**: Install via `requirements.txt`.
-  ```bash
-  pip install -r requirements.txt
-  ```
-- **Ollama Setup** (for local AI):
-  - Install Ollama application from https://ollama.ai
-  - The `ollama` Python package (in requirements.txt) is the client library
-  - Check installed models: `ollama list`
-  - Example models: `gpt-oss:20b`, `gemma3:4b`, `llama3`
+**Important:**  
+Outputs produced by this project are *draft analytical artifacts*. They are **not final ACRs** and **must be reviewed, validated, and signed off by qualified human accessibility experts** before being used for procurement, compliance claims, or publication.
 
-## Running the Application
-- **Main Entry Point**: `run_acr.py`
-- **Command Structure**:
-  ```bash
-  python run_acr.py --repo <repo_id> --ai-backend <ollama|gemini> --model <model_name> --tags <tag1,tag2>
-  ```
-- **Custom Tags**:
-  - Use `--tags` to override default accessibility tags (e.g., `--tags "performance,sustainability"`).
-  - Works for both Drupal (issue tags) and GitHub (issue labels).
-- **Long-running Processes (macOS)**: Use `caffeinate` to prevent sleep during long scans.
-  ```bash
-  caffeinate -i ./venv/bin/python3 run_acr.py ...
-  ```
+The system:
+- Extracts issues from issue trackers (Drupal.org, GitHub)
+- Uses AI models (Ollama, Gemini) to summarize and cluster those issues
+- Produces structured artifacts intended to *support* human-led ACR authoring
 
-## Key Components
-- **`run_acr.py`**: Orchestrates the workflow (extract -> summarize -> consolidate -> report).
-- **`src/extract.py`**: Handles fetching issues from Drupal.org and GitHub API.
-  - **Drupal**: Scrapes issue search results based on WCAG tags.
-  - **GitHub**: Uses GitHub API to fetch issues and discover accessibility labels.
-- **`src/summarize.py`**: Uses AI to analyze issues and map them to WCAG criteria.
-  - Supports **Ollama** (local) and **Gemini** (cloud).
-  - Implements checkpointing to resume interrupted runs.
-- **`results/`**: Stores output files. **Do not commit this directory.**
+This project does **not** make authoritative accessibility conformance claims.
 
-## Coding Conventions
-- **Error Handling**:
-  - Implement retries for network requests, especially for `429 Too Many Requests`.
-  - Use `time.sleep()` for rate limiting.
-- **Data Persistence**:
-  - Save intermediate results (CSVs) frequently (checkpointing) to avoid data loss during long runs.
-- **Git**:
-  - `results/` and `data/` are ignored via `.gitignore`.
-  - Ensure new logic supports both Drupal and GitHub workflows.
+---
 
-## Testing & Validation
-- **GitHub Extraction**: Verify with a known repo (e.g., `ckeditor/ckeditor5`, `joomla/joomla-cms`).
-- **Ollama Models**: Check available models with `ollama list`. Tested with `gpt-oss:20b` (13 GB, 20B parameters).
-- **Drupal Extraction**: Verify with `drupal` project ID.
-- **AI Backend**: Ensure `ollama list` shows the requested model before running.
+## Explicit limitations and human review requirement
 
+- AI-generated summaries may be incomplete, incorrect, or out of date.
+- Mapping issues to WCAG criteria is heuristic and probabilistic.
+- No automated output may be treated as a compliance determination.
+
+**Human review is mandatory.**
+Humans are responsible for:
+- Validating issue relevance
+- Confirming WCAG mappings
+- Determining applicability, severity, and conformance status
+- Producing the final ACR / VPAT document
+
+The tool exists to reduce analysis time, not to replace expert judgment.
+
+---
 
 ## GitHub Pages constraints (required)
 
@@ -86,7 +57,6 @@ Static asset rules:
 Caching/versioning:
 - If you fetch JSON/data files, include a lightweight cache-busting strategy (e.g., query param using a version string) OR document that users must hard refresh after updates.
 
-
 ## Local preview (required before publish)
 
 Test pages via a local HTTP server (not `file://`) to match GitHub Pages behavior.
@@ -99,8 +69,129 @@ Verify:
 - links resolve under a subpath
 - fetch requests succeed
 - no console errors on load
-  
 
 ## Future Improvements
 - Add more robust error handling for AI model timeouts.
 - Improve WCAG mapping logic in `extract.py`.
+
+---
+
+## Architecture: pipeline vs presentation
+
+This repository has two distinct halves:
+
+1. **Python AI pipeline**
+   - Fetches data
+   - Performs AI-assisted analysis
+   - Generates structured artifacts (CSV/JSON/YAML)
+
+2. **Static results UI (HTML/JS/CSS)**
+   - Displays and compares generated artifacts
+   - Explains assumptions and uncertainty
+   - Supports expert review workflows
+
+Non-negotiables:
+- The Python pipeline is the source of truth.
+- The UI must not invent data, infer certainty, or hide uncertainty.
+- The UI may only render fields present in the generated artifacts.
+- Unknown or low-confidence values must be explicit (`null`, `unknown`).
+- All `.html` entry points must load correctly when hosted via GitHub Pages (no backend dependencies, absolute URLs, or build steps that Pages cannot run).
+
+---
+
+## Accessibility posture (important)
+
+### This project is NOT fully accessible
+
+Even with axe linters and automated checks enabled:
+- The UI will **not** be fully WCAG 2.2 AA conformant.
+- Automated testing cannot guarantee accessibility.
+- Some visualizations and comparison views may remain partially inaccessible.
+
+This is intentional and documented.
+
+### Why
+- The UI is a *specialist expert tool*, not an end-user application.
+- It prioritizes dense comparative analysis over broad usability.
+- Accessibility work here focuses on **good-faith effort, transparency, and improvement**, not certification.
+
+---
+
+## Accessibility intent and documentation
+
+Despite the above limitations, the project commits to:
+
+- Designing and coding *toward* WCAG 2.2 AA where feasible
+- Documenting accessibility decisions and known gaps
+- Making improvements incremental and explicit
+
+Agents and contributors must:
+- Prefer semantic HTML and native controls
+- Maintain keyboard operability where practical
+- Preserve visible focus indicators
+- Label form controls programmatically
+- Avoid introducing new barriers casually
+
+When accessibility is not achievable:
+- The limitation must be documented
+- The reason must be explained
+- The trade-off must be intentional
+
+---
+
+## AI usage constraints
+
+AI output is assistive, not authoritative.
+
+Rules:
+- AI must not invent WCAG failures or conformance claims.
+- AI summaries must remain traceable to source issues.
+- When evidence is insufficient, the correct output is:
+  `unknown` or `insufficient data`.
+
+Prompt-driven transformations must:
+- Have defined input/output structure
+- Retain references to source issues (URLs or IDs)
+- Avoid definitive language without evidence
+
+Prompt templates and versions must be retained.
+
+---
+
+## Freshness and verification rules
+
+If generated content references:
+- WCAG versions or interpretations
+- Legal or policy claims
+- Conformance status
+- "Current" project state
+
+Then:
+- Cite an authoritative source, OR
+- Explicitly label the content as AI-derived and unverified
+
+Verified claims must include:
+- `Last verified: YYYY-MM-DD`
+
+---
+
+## Coding and data handling conventions
+
+- Implement retries and backoff for network calls
+- Surface AI timeouts or failures explicitly
+- Save intermediate artifacts (checkpointing)
+- Do not silently overwrite previous runs
+- Do not commit generated results
+
+---
+
+## Definition of done
+
+A change is complete only when:
+- The pipeline runs without uncaught errors
+- Generated artifacts are structured and traceable
+- The UI renders artifacts without fabrication
+- Known accessibility gaps are documented
+- Assumptions and limitations are explicit
+
+This project values transparency over false certainty.
