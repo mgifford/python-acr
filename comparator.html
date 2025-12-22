@@ -95,7 +95,13 @@
 
         function buildAssetUrl(path) {
             const cleaned = (path || '').replace(/^\/+/, '');
-            const basePath = window.location.pathname.replace(/[^\/]*$/, '');
+            const currentPath = window.location.pathname || '/';
+            let basePath = currentPath.replace(/[^\/]*$/, '');
+            const lastSegment = currentPath.substring(currentPath.lastIndexOf('/') + 1);
+            const looksLikeFile = lastSegment.includes('.');
+            if (basePath === '/' && currentPath !== '/' && !looksLikeFile) {
+                basePath = currentPath.endsWith('/') ? currentPath : currentPath + '/';
+            }
             const baseUrl = window.location.origin + basePath;
             return new URL(cleaned, baseUrl).href;
         }
