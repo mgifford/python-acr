@@ -183,6 +183,12 @@ Verified claims must include:
 - Do not silently overwrite previous runs
 - Do not commit generated results
 
+## UI typography requirements
+
+- Headings (semantic h1–h6 elements plus navigation labels and section chips) must use a reliable sans-serif stack: prefer Helvetica/Arial with `sans-serif` fallback.
+- Body copy, paragraphs, table cells, and control text default to a serif stack (`"Times New Roman", Times, serif`) to keep dense analyses readable.
+- Avoid adding external webfont downloads; rely on system fonts so GitHub Pages builds remain deterministic and offline-friendly.
+
 ---
 
 ## Definition of done

@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Multi-Model Comparator</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/atkinson-hyperlegible@5.0.17/index.min.css">
     <link rel="stylesheet" href="styles/palette.css">
     <style>
         :root {
@@ -15,10 +14,12 @@
             --border: #d5dde7;
             --text: #0f172a;
             --section-default: #94a3b8;
+            --font-heading: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            --font-body: "Times New Roman", Times, serif;
         }
 
         body {
-            font-family: 'Atkinson Hyperlegible', 'Segoe UI', sans-serif;
+            font-family: var(--font-body);
             background: radial-gradient(circle at top left, var(--bg-top), var(--bg-bottom));
             margin: 0;
             padding: 24px;
@@ -27,6 +28,20 @@
             flex-direction: column;
             overflow: hidden;
             color: var(--text);
+        }
+
+        h1, h2, h3, h4, h5, h6,
+        .panel-header,
+        .context-title,
+        .section-label,
+        .meta-label,
+        .section-chip,
+        .summary-chips,
+        .difference-pill,
+        .btn,
+        .vote-btn,
+        .context-meta .meta-value {
+            font-family: var(--font-heading);
         }
 
         .header {
