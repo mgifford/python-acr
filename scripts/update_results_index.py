@@ -5,13 +5,15 @@ update_results_index.py
 Scan the `results/` directory for candidate runs that are "publishable" and
 write `results/index.json` listing the CSV datasets to include on GitHub Pages.
 
-This script also updates `.gitignore` to whitelist the specific result
-directories so they can be committed/published while keeping the rest of
-`results/` ignored.
+This script also writes a `results/index.local.json` (ignored by Git) that
+lists every detected run so local operators can access all datasets without
+changing the published index.
+
+Finally, it updates `.gitignore` to whitelist the specific result directories
+so they can be committed/published while keeping the rest of `results/` ignored.
 
 Publishable heuristics (a directory is considered publishable if):
-- It contains a file named `publish_ready` (manual marker), OR
-- It contains `openacr-report.json` or `openacr-report.yaml` (automatic marker).
+- It contains a file named `publish_ready` (use `--mark DIR` to create it).
 
 Usage:
   python scripts/update_results_index.py [--dry-run] [--mark DIR] [--unmark DIR]
@@ -27,6 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / 'results'
 INDEX_FILE = RESULTS / 'index.json'
+LOCAL_INDEX_FILE = RESULTS / 'index.local.json'
 GITIGNORE = ROOT / '.gitignore'
 
 
@@ -37,15 +40,22 @@ def find_publishable_dirs() -> list[Path]:
     for p in sorted(RESULTS.iterdir()):
         if not p.is_dir():
             continue
-        # Manual marker
         if (p / 'publish_ready').exists():
             publishable.append(p)
-            continue
-        # Automatic markers
-        if (p / 'openacr-report.yaml').exists() or (p / 'openacr-report.json').exists():
-            publishable.append(p)
-            continue
     return publishable
+
+
+def find_all_result_dirs() -> list[Path]:
+    if not RESULTS.exists():
+        return []
+    dirs: list[Path] = []
+    for p in sorted(RESULTS.iterdir()):
+        if not p.is_dir():
+            continue
+        if p.name.startswith('.'):  # skip system folders such as .trash
+            continue
+        dirs.append(p)
+    return dirs
 
 
 def pick_dataset_file(run_dir: Path) -> str | None:
@@ -64,22 +74,27 @@ def pick_dataset_file(run_dir: Path) -> str | None:
     return str(rel).replace(os.path.sep, '/')
 
 
-def write_index(publishable: list[Path], dry_run: bool = False) -> list[str]:
-    datasets = []
-    for d in publishable:
+def build_dataset_entries(run_dirs: list[Path]) -> list[str]:
+    datasets: list[str] = []
+    for d in run_dirs:
         ds = pick_dataset_file(d)
         if ds:
             datasets.append(ds)
+    return datasets
+
+
+def write_index_file(datasets: list[str], destination: Path, dry_run: bool = False) -> list[str]:
+    rel_path = destination.relative_to(ROOT)
     if dry_run:
-        print('Would write index.json with entries:')
+        print(f'Would write {rel_path} with entries:')
         for d in datasets:
             print('  ', d)
         return datasets
 
     RESULTS.mkdir(parents=True, exist_ok=True)
-    with open(INDEX_FILE, 'w', encoding='utf-8') as f:
+    with open(destination, 'w', encoding='utf-8') as f:
         json.dump(datasets, f, indent=2)
-    print(f'Wrote {INDEX_FILE} with {len(datasets)} entries')
+    print(f'Wrote {rel_path} with {len(datasets)} entries')
     return datasets
 
 
@@ -182,7 +197,14 @@ def main():
 
     publishable = find_publishable_dirs()
     print('Found publishable dirs:', [p.name for p in publishable])
-    datasets = write_index(publishable, dry_run=args.dry_run)
+    publishable_datasets = build_dataset_entries(publishable)
+    write_index_file(publishable_datasets, INDEX_FILE, dry_run=args.dry_run)
+
+    all_dirs = find_all_result_dirs()
+    if args.verbose:
+        print('Found result dirs (local scope):', [p.name for p in all_dirs])
+    local_datasets = build_dataset_entries(all_dirs)
+    write_index_file(local_datasets, LOCAL_INDEX_FILE, dry_run=args.dry_run)
     removed_dirs: list[Path] = []
     if not args.no_gitignore:
         entries, removed = update_gitignore(publishable, dry_run=args.dry_run, verbose=args.verbose)
@@ -211,7 +233,8 @@ def main():
     if args.verbose or args.dry_run:
         print('\nSummary:')
         print('  Publishable dirs:', [p.name for p in publishable])
-        print('  Datasets written:', len(datasets))
+        print('  Published datasets:', len(publishable_datasets))
+        print('  Local datasets:', len(local_datasets))
         print('  Removed whitelisted dirs:', [str(p.relative_to(ROOT)) for p in removed_dirs])
 
 

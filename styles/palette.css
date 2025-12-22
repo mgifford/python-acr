@@ -1,0 +1,31 @@
+:root {
+  --accent-wcag-mapping: #2563eb;
+  --accent-wcag-mapping-bg: #e0ecff;
+
+  --accent-acr-note: #0284c7;
+  --accent-acr-note-bg: #f0f9ff;
+
+  --accent-developer-note: #16a34a;
+  --accent-developer-note-bg: #f0fdf4;
+
+  --accent-thread-tldr: #a855f7;
+  --accent-thread-tldr-bg: #f3e8ff;
+
+  --accent-thread-problem: #ef4444;
+  --accent-thread-problem-bg: #fee2e2;
+
+  --accent-thread-sentiment: #0ea5e9;
+  --accent-thread-sentiment-bg: #e0f2fe;
+
+  --accent-thread-timeline: #f59e0b;
+  --accent-thread-timeline-bg: #fef3c7;
+
+  --accent-thread-links: #3b82f6;
+  --accent-thread-links-bg: #dbeafe;
+
+  --accent-thread-todo: #ec4899;
+  --accent-thread-todo-bg: #fce7f3;
+
+  --accent-thread-journey: #0f766e;
+  --accent-thread-journey-bg: #ecfdf5;
+}

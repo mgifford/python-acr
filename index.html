@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>AI Accessibility Report Validator</title>
+    <link rel="stylesheet" href="styles/palette.css">
     <style>
         :root {
             --primary-color: #2563eb;
@@ -346,11 +347,11 @@
                     </div>
                     <div class="info-item" style="margin-bottom: 15px;">
                         <label>ACR Compliance Note</label>
-                        <div id="displayAcrNote" class="content-block" style="background: #f0f9ff; padding: 15px; border-left: 3px solid #0284c7;"></div>
+                        <div id="displayAcrNote" class="content-block" style="background: var(--accent-acr-note-bg); padding: 15px; border-left: 3px solid var(--accent-acr-note);"></div>
                     </div>
                     <div class="info-item">
                         <label>Developer Guidance</label>
-                        <div id="displayDevNote" class="content-block" style="background: #f0fdf4; padding: 15px; border-left: 3px solid #16a34a;"></div>
+                        <div id="displayDevNote" class="content-block" style="background: var(--accent-developer-note-bg); padding: 15px; border-left: 3px solid var(--accent-developer-note);"></div>
                     </div>
                 </div>
 
@@ -360,32 +361,32 @@
                     
                     <div class="info-item" style="margin-bottom: 15px;">
                         <h3>TL;DR</h3>
-                        <div id="displayTldr" class="content-block" style="background: #f3e8ff; padding: 15px; border-left: 3px solid #a855f7;"></div>
+                        <div id="displayTldr" class="content-block" style="background: var(--accent-thread-tldr-bg); padding: 15px; border-left: 3px solid var(--accent-thread-tldr);"></div>
                     </div>
 
                     <div class="info-item" style="margin-bottom: 15px;">
                         <h3>Problem Statement</h3>
-                        <div id="displayProblem" class="content-block" style="background: #fee2e2; padding: 15px; border-left: 3px solid #ef4444;"></div>
+                        <div id="displayProblem" class="content-block" style="background: var(--accent-thread-problem-bg); padding: 15px; border-left: 3px solid var(--accent-thread-problem);"></div>
                     </div>
 
                     <div class="info-item" style="margin-bottom: 15px;">
                         <h3>Community Sentiment</h3>
-                        <div id="displaySentiment" class="content-block" style="background: #e0f2fe; padding: 15px; border-left: 3px solid #0ea5e9;"></div>
+                        <div id="displaySentiment" class="content-block" style="background: var(--accent-thread-sentiment-bg); padding: 15px; border-left: 3px solid var(--accent-thread-sentiment);"></div>
                     </div>
 
                     <div class="info-item" style="margin-bottom: 15px;">
                         <h3>Timeline & Status</h3>
-                        <div id="displayTimeline" class="content-block" style="background: #fef3c7; padding: 15px; border-left: 3px solid #f59e0b; white-space: normal;"></div>
+                        <div id="displayTimeline" class="content-block" style="background: var(--accent-thread-timeline-bg); padding: 15px; border-left: 3px solid var(--accent-thread-timeline); white-space: normal;"></div>
                     </div>
 
                     <div class="info-item" style="margin-bottom: 15px;">
                         <h3>Action Items / TODO</h3>
-                        <div id="displayTodo" class="content-block" style="background: #fce7f3; padding: 15px; border-left: 3px solid #ec4899;"></div>
+                        <div id="displayTodo" class="content-block" style="background: var(--accent-thread-todo-bg); padding: 15px; border-left: 3px solid var(--accent-thread-todo);"></div>
                     </div>
 
                     <div class="info-item">
                         <h3>Key Links</h3>
-                        <div id="displayLinks" class="content-block" style="background: #dbeafe; padding: 15px; border-left: 3px solid #3b82f6;"></div>
+                        <div id="displayLinks" class="content-block" style="background: var(--accent-thread-links-bg); padding: 15px; border-left: 3px solid var(--accent-thread-links);"></div>
                     </div>
                 </div>
                 </div>
@@ -586,13 +587,20 @@
                     // 2) Try to discover a results index (if you pre-generate one for GH Pages)
                     //    e.g. results/index.json listing available result CSVs. This is optional
                     //    but recommended if you want GH Pages to auto-discover available runs.
-                    const origin = window.location.origin;
-                    const repoBase = getRepoBase();
+                    const preferLocalIndex = shouldPreferLocalIndex();
+                    const indexFiles = preferLocalIndex
+                        ? ['results/index.local.json', 'results/index.json']
+                        : ['results/index.json', 'results/index.local.json'];
                     const indexCandidates = [];
-                    if (repoBase) indexCandidates.push(`${origin}/${repoBase}results/index.json`);
-                    indexCandidates.push(`${origin}/python-acr/results/index.json`);
-                    indexCandidates.push('results/index.json');
-                    indexCandidates.push('./results/index.json');
+                    const seenIndex = new Set();
+                    for (const fileName of indexFiles) {
+                        for (const candidate of buildPathCandidates(fileName)) {
+                            if (!seenIndex.has(candidate)) {
+                                indexCandidates.push(candidate);
+                                seenIndex.add(candidate);
+                            }
+                        }
+                    }
 
                     for (const ic of indexCandidates) {
                         try {
@@ -621,10 +629,13 @@
 
                     // 3) Finally, fall back to the static fallback `datasets.json` committed with the site
                     const candidates = [];
-                    if (repoBase) candidates.push(`${origin}/${repoBase}datasets.json`);
-                    candidates.push(`${origin}/python-acr/datasets.json`);
-                    candidates.push('datasets.json');
-                    candidates.push('./datasets.json');
+                    const seenDatasets = new Set();
+                    for (const candidate of buildPathCandidates('datasets.json')) {
+                        if (!seenDatasets.has(candidate)) {
+                            candidates.push(candidate);
+                            seenDatasets.add(candidate);
+                        }
+                    }
 
                     for (const c of candidates) {
                         try {
@@ -723,25 +734,7 @@
                 // Attempt several candidate ways to fetch the CSV so it works under GH Pages
                 // (where the site is at /python-acr/) and locally (where you may run a server
                 // that exposes files at the repo root or via `run_server.py`).
-                const origin = window.location.origin;
-                const candidates = [];
-
-                // If file is already an absolute URL, use it directly
-                if (/^https?:\/\//i.test(file)) candidates.push(file);
-
-                // Normalize file to remove leading slash when building repo-relative paths
-                const fileNoLead = file.replace(/^\//, '');
-
-                // origin + repoBase + file
-                const repoBase = getRepoBase();
-                if (repoBase) candidates.push(`${origin}/${repoBase}${fileNoLead}`);
-
-                // origin + explicit repo path
-                candidates.push(`${origin}/python-acr/${fileNoLead}`);
-
-                // repo-relative
-                candidates.push(fileNoLead);
-                candidates.push(`./${fileNoLead}`);
+                const candidates = buildPathCandidates(file);
 
                 let lastErr = null;
                 for (const c of candidates) {
@@ -1165,6 +1158,77 @@
                 // ignore
             }
             return '';
+        }
+
+        function shouldPreferLocalIndex() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                const datasetIndex = params.get('datasetIndex');
+                if (datasetIndex) {
+                    const normalized = datasetIndex.toLowerCase();
+                    if (normalized === 'local') return true;
+                    if (normalized === 'published') return false;
+                }
+                const localIndexParam = params.get('localIndex');
+                if (localIndexParam) {
+                    const normalized = localIndexParam.toLowerCase();
+                    if (['1', 'true', 'yes', 'local'].includes(normalized)) return true;
+                    if (['0', 'false', 'no', 'published'].includes(normalized)) return false;
+                }
+            } catch (e) {
+                // ignore and fall back to host heuristics
+            }
+
+            try {
+                const host = (window.location.hostname || '').toLowerCase();
+                if (!host) return true;
+                const localHosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1'];
+                if (localHosts.includes(host)) return true;
+                if (host.endsWith('.local')) return true;
+                if (window.location.protocol === 'file:') return true;
+            } catch (e) {
+                return true;
+            }
+
+            return false;
+        }
+
+        function buildPathCandidates(filePath) {
+            if (!filePath) return [];
+
+            const candidates = [];
+            const seen = new Set();
+            const push = (val) => {
+                if (!val || seen.has(val)) return;
+                candidates.push(val);
+                seen.add(val);
+            };
+
+            if (/^https?:\/\//i.test(filePath)) {
+                push(filePath);
+                return candidates;
+            }
+
+            const normalized = filePath.replace(/^\.?\//, '');
+            push(filePath);
+            if (filePath !== normalized) push(normalized);
+            push(`./${normalized}`);
+
+            try {
+                const origin = window.location.origin;
+                const canUseOrigin = origin && origin !== 'null';
+                const repoBase = getRepoBase();
+                if (canUseOrigin && repoBase) {
+                    push(`${origin}/${repoBase}${normalized}`);
+                }
+                if (canUseOrigin) {
+                    push(`${origin}/python-acr/${normalized}`);
+                }
+            } catch (e) {
+                // ignore
+            }
+
+            return candidates;
         }
 
         function renderJourney(text, issueUrl) {
