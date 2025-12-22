@@ -2,6 +2,7 @@ import os
 import json
 from pathlib import Path
 import pandas as pd
+import argparse
 
 BASE_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = BASE_DIR / 'results'
@@ -75,5 +76,19 @@ def build_comparison():
     print(f"Comparison JSON written to {OUTPUT_PATH}")
 
 
-if __name__ == '__main__':
+def main():
+    parser = argparse.ArgumentParser(
+        description='Build comparison JSON for comparison.html.\nIf no options are provided this script will scan results/ and write results/comparison.json.'
+    )
+    parser.add_argument('--results-dir', default=str(RESULTS_DIR), help='Path to the results directory')
+    args = parser.parse_args()
+
+    # Informative help when run without arguments
+    if os.environ.get('CI') is None and not any(arg.startswith('-') for arg in os.sys.argv[1:]):
+        print('Scanning results directory and building comparison JSON (this may take a moment).')
+
     build_comparison()
+
+
+if __name__ == '__main__':
+    main()
