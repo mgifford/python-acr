@@ -61,6 +61,8 @@
             gap: 18px;
             flex: 1;
             overflow: hidden;
+            align-items: stretch;
+            position: relative;
         }
 
         .comparison-summary {
@@ -97,12 +99,37 @@
             flex-direction: column;
             border: 1px solid var(--border);
             overflow: hidden;
+            min-width: 180px;
+            flex: 1 1 auto;
         }
 
         .context-panel {
             flex: 0 0 22%;
             background: #f8fafc;
             border-left: 6px solid var(--primary);
+        }
+
+        .panel-resizer {
+            flex: 0 0 10px;
+            cursor: col-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            touch-action: none;
+        }
+
+        .panel-resizer::before {
+            content: '';
+            width: 2px;
+            height: 70%;
+            background: #cbd5e1;
+            border-radius: 999px;
+        }
+
+        .panel-resizer:focus-visible::before,
+        .panel-resizer:hover::before {
+            background: var(--primary);
         }
 
         .panel-header {
@@ -124,6 +151,7 @@
             line-height: 1.6;
             white-space: normal;
             scroll-padding-top: 56px;
+            min-width: 0;
         }
 
         .model-0-header { border-top: 6px solid #f97316; }
@@ -273,7 +301,7 @@
         <strong>Preparing comparison snapshot…</strong>
     </div>
     <div class="grid-container" id="main-grid">
-        <div class="panel context-panel">
+        <div class="panel context-panel" data-panel-index="0">
             <div class="panel-header">Context & Inputs</div>
             <div class="panel-content context-content">
                 <div class="context-title" id="context-title">Issue context</div>
@@ -331,6 +359,11 @@
         let allModels = [];
         let selectedModels = [];
         let modelDropdownOpen = false;
+        const DEFAULT_CONTEXT_WIDTH = 22;
+        const MIN_COLUMN_WIDTH = 8;
+        const KEYBOARD_RESIZE_STEP = 2;
+        let columnWidths = [];
+        let activeResize = null;
 
         const SECTION_SLUGS = {
             'WCAG Mapping': 'wcag-mapping',
@@ -359,6 +392,10 @@
         };
 
         const DEFAULT_SECTION_THEME = { color: 'var(--section-default)', icon: '•', label: 'Detail' };
+
+        function clamp(value, min, max) {
+            return Math.min(max, Math.max(min, value));
+        }
 
         function slugifySection(label) {
             return (String(label || '')
@@ -544,6 +581,120 @@
                 icon: meta.icon || DEFAULT_SECTION_THEME.icon,
                 label: meta.label || getSectionLabel(slug)
             };
+        }
+
+        function initializeColumnWidths(totalPanels) {
+            if (totalPanels <= 0) {
+                columnWidths = [];
+                return;
+            }
+            if (totalPanels === 1) {
+                columnWidths = [100];
+                return;
+            }
+            const otherSlots = totalPanels - 1;
+            let contextWidth = clamp(columnWidths[0] || DEFAULT_CONTEXT_WIDTH, 15, 45);
+            const minNeededForOthers = otherSlots * MIN_COLUMN_WIDTH;
+            if ((100 - contextWidth) < minNeededForOthers) {
+                const minContext = 10;
+                contextWidth = clamp(100 - minNeededForOthers, minContext, 60);
+            }
+            const remaining = Math.max(100 - contextWidth, 0);
+            const perPanel = remaining / otherSlots;
+            columnWidths = [contextWidth, ...Array(otherSlots).fill(perPanel)];
+        }
+
+        function ensureColumnWidths(totalPanels) {
+            if (columnWidths.length !== totalPanels) {
+                initializeColumnWidths(totalPanels);
+            }
+        }
+
+        function applyColumnWidths() {
+            const panels = document.querySelectorAll('[data-panel-index]');
+            panels.forEach(panel => {
+                const idx = Number(panel.dataset.panelIndex);
+                if (Number.isNaN(idx) || columnWidths[idx] === undefined) return;
+                const width = columnWidths[idx];
+                panel.style.flexBasis = `${width}%`;
+                panel.style.flexGrow = 0;
+                panel.style.flexShrink = 1;
+                panel.style.maxWidth = `${width}%`;
+                panel.style.width = `${width}%`;
+            });
+        }
+
+        function adjustColumnWidths(index, deltaPercent) {
+            if (columnWidths.length <= index + 1) return;
+            const left = columnWidths[index];
+            const right = columnWidths[index + 1];
+            const leftMin = Math.min(MIN_COLUMN_WIDTH, left);
+            const rightMin = Math.min(MIN_COLUMN_WIDTH, right);
+            const maxPositive = right - rightMin;
+            const maxNegative = -(left - leftMin);
+            const clampedDelta = Math.min(Math.max(deltaPercent, maxNegative), maxPositive);
+            if (!clampedDelta) return;
+            columnWidths[index] = left + clampedDelta;
+            columnWidths[index + 1] = right - clampedDelta;
+            applyColumnWidths();
+        }
+
+        function startResize(event, index) {
+            event.preventDefault();
+            const point = event.touches ? event.touches[0] : event;
+            activeResize = {
+                index,
+                lastX: point.clientX
+            };
+            document.addEventListener('mousemove', handleResizeMove);
+            document.addEventListener('touchmove', handleResizeMove, { passive: false });
+            document.addEventListener('mouseup', stopResize);
+            document.addEventListener('touchend', stopResize);
+        }
+
+        function handleResizeMove(event) {
+            if (!activeResize) return;
+            if (event.cancelable) event.preventDefault();
+            const point = event.touches ? event.touches[0] : event;
+            const deltaPx = point.clientX - activeResize.lastX;
+            const grid = document.getElementById('main-grid');
+            if (!grid) return;
+            const rect = grid.getBoundingClientRect();
+            if (!rect.width) return;
+            const deltaPercent = (deltaPx / rect.width) * 100;
+            adjustColumnWidths(activeResize.index, deltaPercent);
+            activeResize.lastX = point.clientX;
+        }
+
+        function stopResize() {
+            if (!activeResize) return;
+            document.removeEventListener('mousemove', handleResizeMove);
+            document.removeEventListener('touchmove', handleResizeMove, { passive: false });
+            document.removeEventListener('mouseup', stopResize);
+            document.removeEventListener('touchend', stopResize);
+            activeResize = null;
+        }
+
+        function handleResizerKey(event, index) {
+            if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+            event.preventDefault();
+            const step = (event.shiftKey ? KEYBOARD_RESIZE_STEP * 2 : KEYBOARD_RESIZE_STEP) * (event.key === 'ArrowRight' ? 1 : -1);
+            adjustColumnWidths(index, step);
+        }
+
+        function createResizer(index) {
+            const resizer = document.createElement('div');
+            resizer.className = 'panel-resizer grid-dynamic-item';
+            resizer.setAttribute('role', 'separator');
+            resizer.setAttribute('aria-orientation', 'vertical');
+            resizer.setAttribute('aria-label', 'Resize column boundary');
+            resizer.setAttribute('tabindex', '0');
+            resizer.dataset.resizerIndex = index;
+            const handleStart = event => startResize(event, index);
+            resizer.addEventListener('mousedown', handleStart);
+            resizer.addEventListener('touchstart', handleStart, { passive: false });
+            resizer.addEventListener('keydown', event => handleResizerKey(event, index));
+            return resizer;
         }
 
         function flagSectionDifferences() {
@@ -861,15 +1012,26 @@
             });
         }
 
-        function generateLayout(models) {
+        function generateLayout(models = []) {
             const grid = document.getElementById('main-grid');
-            // Keep context panel, remove old model panels if any
-            while (grid.children.length > 1) { grid.removeChild(grid.lastChild); }
+            if (!grid) return;
+            const contextPanel = grid.querySelector('.context-panel');
+            if (contextPanel) {
+                contextPanel.dataset.panelIndex = '0';
+            }
+            grid.querySelectorAll('.grid-dynamic-item').forEach(el => el.remove());
+            const totalPanels = 1 + models.length;
+            ensureColumnWidths(totalPanels);
             models.forEach((model, i) => {
                 const modelName = model?.model_name || selectedModels[i] || `Model ${i + 1}`;
+                if (grid.children.length > 0) {
+                    const resizer = createResizer(i);
+                    grid.appendChild(resizer);
+                }
                 const div = document.createElement('div');
-                div.className = `panel model-${i}-header`;
+                div.className = `panel model-${i}-header grid-dynamic-item`;
                 div.setAttribute('data-model-panel', i);
+                div.dataset.panelIndex = (i + 1).toString();
                 div.innerHTML = `
                     <div class="panel-header">
                         <span>${escapeHtml(modelName)}</span>
@@ -884,6 +1046,7 @@
                 `;
                 grid.appendChild(div);
             });
+            applyColumnWidths();
         }
 
         function render() {
