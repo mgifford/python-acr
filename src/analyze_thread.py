@@ -153,8 +153,9 @@ def scrape_drupal_issue(url):
         # Comments - extract comment number, author, profile link, comment anchor, and text
         comments = []
         comment_divs = soup.find_all('div', class_='comment')
+        print(f"[DEBUG] Found {len(comment_divs)} comment divs on {url}")
         screenshot_count = 0
-        for comment in comment_divs[:200]:  # Increased limit to 200
+        for i, comment in enumerate(comment_divs[:200]):  # Increased limit to 200
             comment_num = comment.find('a', class_='permalink')
             content = comment.find('div', class_='content')
             
@@ -199,6 +200,11 @@ def scrape_drupal_issue(url):
         metadata['comments'] = comments
         metadata['num_patches'] = patch_count
         metadata['num_screenshots'] = screenshot_count
+        
+        if not comments:
+            print(f"[DEBUG] No comments parsed for {url}. Printing first 3 comment divs for inspection:")
+            for i, div in enumerate(comment_divs[:3]):
+                print(f"[DEBUG] Comment div {i+1} HTML:\n{div.prettify()[:1000]}\n---")
         
         return metadata
     except Exception as e:
