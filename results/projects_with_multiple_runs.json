@@ -1,0 +1,66 @@
+{
+  "drupal": [
+    {
+      "repo": "drupal",
+      "model": "default",
+      "date": "12-21-2025",
+      "folder": "drupal-default-12-21-2025"
+    },
+    {
+      "repo": "drupal",
+      "model": "gemma34b",
+      "date": "12-19-2025",
+      "folder": "drupal-gemma34b-12-19-2025"
+    },
+    {
+      "repo": "drupal",
+      "model": "gpt",
+      "date": "oss20b-12-17-2025",
+      "folder": "drupal-gpt-oss20b-12-17-2025"
+    },
+    {
+      "repo": "drupal",
+      "model": "gpt",
+      "date": "oss20b-12-19-2025",
+      "folder": "drupal-gpt-oss20b-12-19-2025"
+    },
+    {
+      "repo": "drupal",
+      "model": "gemini",
+      "date": "2.0-flash-12-15-2025",
+      "folder": "drupal-gemini-2.0-flash-12-15-2025"
+    },
+    {
+      "repo": "drupal",
+      "model": "gemma34b",
+      "date": "12-16-2025",
+      "folder": "drupal-gemma34b-12-16-2025"
+    },
+    {
+      "repo": "drupal",
+      "model": "default",
+      "date": "12-19-2025",
+      "folder": "drupal-default-12-19-2025"
+    },
+    {
+      "repo": "drupal",
+      "model": "gemma34b",
+      "date": "12-17-2025",
+      "folder": "drupal-gemma34b-12-17-2025"
+    }
+  ],
+  "ckeditor": [
+    {
+      "repo": "ckeditor",
+      "model": "ckeditor5",
+      "date": "gpt-oss20b-12-16-2025",
+      "folder": "ckeditor-ckeditor5-gpt-oss20b-12-16-2025"
+    },
+    {
+      "repo": "ckeditor",
+      "model": "ckeditor5",
+      "date": "gpt-oss20b-12-17-2025",
+      "folder": "ckeditor-ckeditor5-gpt-oss20b-12-17-2025"
+    }
+  ]
+}

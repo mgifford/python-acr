@@ -1,7 +1,7 @@
 # Ignore results/ contents by default but allow whitelisting specific subfolders
 results/*
-results/comparison.json
-results/projects_with_multiple_runs.json
+!results/comparison.json
+!results/projects_with_multiple_runs.json
 data/
 __pycache__/
 **/__pycache__/

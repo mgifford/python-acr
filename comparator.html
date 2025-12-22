@@ -93,20 +93,27 @@
         let selectedModels = [];
         let modelDropdownOpen = false;
 
+        function buildAssetUrl(path) {
+            const cleaned = (path || '').replace(/^\/+/, '');
+            const basePath = window.location.pathname.replace(/[^\/]*$/, '');
+            const baseUrl = window.location.origin + basePath;
+            return new URL(cleaned, baseUrl).href;
+        }
+
         async function init() {
             try {
                 // Load projects with multiple runs
-                const projRes = await fetch('/results/projects_with_multiple_runs.json');
+                const projRes = await fetch(buildAssetUrl('results/projects_with_multiple_runs.json'));
                 const allProjectsObj = await projRes.json();
                 // Load all comparison data
-                const res = await fetch('/results/comparison.json');
+                const res = await fetch(buildAssetUrl('results/comparison.json'));
                 let rawData = await res.json();
                 // For each model in each item, check if its run folder exists by attempting to fetch its CSV file
                 async function modelExists(model) {
                     // Use the csv_path property if present
                     if (!model.csv_path) return false;
                     try {
-                        const test = await fetch(model.csv_path, {method: 'HEAD'});
+                        const test = await fetch(buildAssetUrl(model.csv_path), {method: 'HEAD'});
                         return test.ok;
                     } catch (e) { return false; }
                 }
