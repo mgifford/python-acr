@@ -49,6 +49,47 @@
             align-items: center;
         }
 
+        .dataset-controls {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .dataset-selector-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 240px;
+        }
+
+        .taxonomy-filter {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+            font-family: var(--font-heading);
+        }
+
+        .taxonomy-filter label {
+            font-size: 0.75rem;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .taxonomy-filter select {
+            margin-top: 4px;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-family: var(--font-body);
+        }
+
+        .taxonomy-status {
+            font-size: 0.8rem;
+            color: #475569;
+        }
+
         select.issue-selector {
             padding: 8px;
             border: 1px solid #cbd5e1;
@@ -193,6 +234,26 @@
             font-size: 0.95rem;
         }
 
+        .taxonomy-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .taxonomy-chip {
+            background: #e2e8f0;
+            border-radius: 999px;
+            padding: 2px 10px;
+            font-size: 0.75rem;
+            font-family: var(--font-heading);
+            color: #334155;
+        }
+
+        .taxonomy-chip.empty {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
         .validation-controls {
             background: #fffbeb;
             border-color: #fcd34d;
@@ -284,11 +345,21 @@
     <header>
         <h1>🔍 AI Accessibility Validator</h1>
         
-        <div style="margin-right: 20px; display: flex; gap: 10px; align-items: center;">
-            <select id="datasetSelector" onchange="loadSelectedDataset(this.value)" style="max-width: 300px; padding: 8px;">
-                <option value="">Loading datasets...</option>
-            </select>
-            
+        <div class="dataset-controls">
+            <div class="dataset-selector-stack">
+                <select id="datasetSelector" aria-label="Dataset" onchange="loadSelectedDataset(this.value)" style="max-width: 320px; padding: 8px;">
+                    <option value="">Loading datasets...</option>
+                </select>
+                <div id="taxonomyStatus" class="taxonomy-status">Select a dataset to begin</div>
+            </div>
+
+            <div class="taxonomy-filter">
+                <label for="taxonomyFilter">Taxonomy view</label>
+                <select id="taxonomyFilter" onchange="handleTaxonomyFilterChange(this.value)">
+                    <option value="__all__">All taxonomies</option>
+                </select>
+            </div>
+
             <button onclick="openCompanionWindow()" class="nav-button" style="background-color: #2563eb; color: white;">
                 Open Companion Window ↗
             </button>
@@ -330,6 +401,7 @@
                         <div class="info-item"><label>Priority</label><div id="displayPriority"></div></div>
                         <div class="info-item"><label>Component</label><div id="displayComponent"></div></div>
                         <div class="info-item"><label>WCAG SC</label><div id="displayWcag"></div></div>
+                        <div class="info-item taxonomy-display"><label>Taxonomies</label><div id="displayTaxonomies" class="taxonomy-chips"></div></div>
                         <div class="info-item"><label>Version</label><div id="displayVersion"></div></div>
                         <div class="info-item"><label>Created</label><div id="displayCreated"></div></div>
                         <div class="info-item"><label>URL</label><div id="displayUrl"></div></div>
@@ -468,10 +540,16 @@
         });
         // Configuration
         const DATA_ENDPOINT = '/data/llm_feedback_data.json';
+        const TAXONOMY_ALL = '__all__';
+        const TAXONOMY_UNTAGGED = '__untagged__';
         let allData = [];
+        let visibleData = [];
         let currentIndex = 0;
         let sourceWindow = null;
         let isCompanionActive = false;
+        let activeTaxonomy = TAXONOMY_ALL;
+        let taxonomyCounts = new Map();
+        let untaggedCount = 0;
 
         // Resizer functionality
         const resizer = document.getElementById('resizer');
@@ -510,8 +588,211 @@
             });
         }
 
+        function getCurrentRow() {
+            if (!visibleData.length) return null;
+            return visibleData[Math.min(currentIndex, visibleData.length - 1)] || null;
+        }
+
+        function handleTaxonomyFilterChange(value) {
+            activeTaxonomy = value || TAXONOMY_ALL;
+            currentIndex = 0;
+            applyTaxonomyFilter();
+        }
+
+        function applyTaxonomyFilter() {
+            if (!allData.length) {
+                visibleData = [];
+            } else if (activeTaxonomy === TAXONOMY_ALL) {
+                visibleData = [...allData];
+            } else if (activeTaxonomy === TAXONOMY_UNTAGGED) {
+                visibleData = allData.filter(row => getTaxonomyList(row).length === 0);
+            } else {
+                visibleData = allData.filter(row => getTaxonomyList(row).some(tag => tag.toLowerCase() === activeTaxonomy));
+            }
+
+            refreshIssueSelector();
+            updateTaxonomyStatus();
+
+            const loadingEl = document.getElementById('loadingStatus');
+            const contentArea = document.getElementById('contentArea');
+            if (!loadingEl || !contentArea) return;
+
+            if (!visibleData.length) {
+                loadingEl.style.display = 'block';
+                loadingEl.textContent = 'No issues match the selected taxonomy.';
+                contentArea.style.display = 'none';
+                return;
+            }
+
+            loadingEl.style.display = 'none';
+            contentArea.style.display = 'flex';
+            currentIndex = Math.min(currentIndex, visibleData.length - 1);
+            updateDisplay();
+        }
+
+        function buildTaxonomyMetadata(data) {
+            taxonomyCounts = new Map();
+            untaggedCount = 0;
+            data.forEach(row => {
+                const tags = getTaxonomyList(row);
+                if (!tags.length) {
+                    untaggedCount += 1;
+                    return;
+                }
+                const seenForRow = new Set();
+                tags.forEach(tag => {
+                    const key = tag.toLowerCase();
+                    if (seenForRow.has(key)) return;
+                    seenForRow.add(key);
+                    if (!taxonomyCounts.has(key)) {
+                        taxonomyCounts.set(key, { key, label: tag, count: 1 });
+                    } else {
+                        taxonomyCounts.get(key).count += 1;
+                    }
+                });
+            });
+        }
+
+        function populateTaxonomyFilter() {
+            const filterEl = document.getElementById('taxonomyFilter');
+            if (!filterEl) return;
+            filterEl.innerHTML = '';
+
+            const total = allData.length;
+            const baseOption = document.createElement('option');
+            baseOption.value = TAXONOMY_ALL;
+            baseOption.textContent = total ? `All taxonomies (${total})` : 'All taxonomies';
+            filterEl.appendChild(baseOption);
+
+            const entries = Array.from(taxonomyCounts.values()).sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+            entries.forEach(entry => {
+                const option = document.createElement('option');
+                option.value = entry.key;
+                option.textContent = `${entry.label} (${entry.count})`;
+                filterEl.appendChild(option);
+            });
+
+            if (untaggedCount > 0) {
+                const option = document.createElement('option');
+                option.value = TAXONOMY_UNTAGGED;
+                option.textContent = `No taxonomy (${untaggedCount})`;
+                filterEl.appendChild(option);
+            }
+
+            filterEl.value = activeTaxonomy;
+        }
+
+        function refreshIssueSelector() {
+            const selector = document.getElementById('issueSelector');
+            if (!selector) return;
+            selector.innerHTML = '';
+
+            if (!visibleData.length) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.text = activeTaxonomy === TAXONOMY_ALL ? 'No issues available' : 'No issues in this taxonomy';
+                selector.appendChild(option);
+                selector.disabled = true;
+                return;
+            }
+
+            selector.disabled = false;
+            visibleData.forEach((row, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.text = formatIssueSelectorLabel(row, index);
+                selector.appendChild(option);
+            });
+            selector.value = String(currentIndex);
+        }
+
+        function updateTaxonomyStatus() {
+            const statusEl = document.getElementById('taxonomyStatus');
+            if (!statusEl) return;
+            if (!allData.length) {
+                statusEl.textContent = 'No dataset loaded';
+                return;
+            }
+            const label = getTaxonomyDisplayLabel(activeTaxonomy);
+            statusEl.textContent = `Showing ${visibleData.length} of ${allData.length} issues (${label})`;
+        }
+
+        function getTaxonomyDisplayLabel(value) {
+            if (value === TAXONOMY_ALL) return 'All taxonomies';
+            if (value === TAXONOMY_UNTAGGED) return 'No taxonomy';
+            const entry = taxonomyCounts.get(value);
+            return entry ? entry.label : value;
+        }
+
+        function getTaxonomyList(row) {
+            if (!row) return [];
+            if (row.__taxonomyList) return row.__taxonomyList;
+            let raw = row['Taxonomies'] || row['taxonomies'] || row['issue_tags'] || '';
+            let values = [];
+
+            if (Array.isArray(raw)) {
+                values = raw;
+            } else if (typeof raw === 'string') {
+                const trimmed = raw.trim();
+                if (!trimmed) {
+                    values = [];
+                } else if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                    try {
+                        const parsed = JSON.parse(trimmed);
+                        if (Array.isArray(parsed)) {
+                            values = parsed;
+                        } else {
+                            values = trimmed.split(/[|;,]/);
+                        }
+                    } catch (e) {
+                        values = trimmed.split(/[|;,]/);
+                    }
+                } else {
+                    values = trimmed.split(/[|;,]/);
+                }
+            } else if (raw && typeof raw === 'object') {
+                values = Object.values(raw);
+            }
+
+            const cleaned = [];
+            const seen = new Set();
+            values.forEach(tag => {
+                if (tag === null || tag === undefined) return;
+                const text = String(tag).trim();
+                if (!text) return;
+                const normalized = text.replace(/\|/g, '/').trim();
+                if (!normalized) return;
+                const key = normalized.toLowerCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                cleaned.push(normalized);
+            });
+            row.__taxonomyList = cleaned;
+            return cleaned;
+        }
+
+        function formatIssueSelectorLabel(row, index) {
+            const id = row['Issue ID'] || row.query_id || index;
+            const rawTitle = row['Issue Title'] || (row.inputs && row.inputs.query) || 'Untitled Issue';
+            const title = rawTitle.length > 60 ? `${rawTitle.substring(0, 60)}...` : rawTitle;
+            const tags = getTaxonomyList(row);
+            let suffix = '';
+            if (activeTaxonomy === TAXONOMY_ALL) {
+                if (tags.length) {
+                    suffix = ` • ${tags[0]}${tags.length > 1 ? ` (+${tags.length - 1})` : ''}`;
+                } else {
+                    suffix = ' • No taxonomy';
+                }
+            }
+            return `${index + 1}. [${id}] ${title}${suffix}`;
+        }
+
         function openCompanionWindow() {
-            const row = allData[currentIndex];
+            const row = getCurrentRow();
+            if (!row) {
+                alert("No issue selected.");
+                return;
+            }
             const url = row["Issue URL"] || row.source_url || "";
             
             if (!url) {
@@ -536,7 +817,8 @@
         function updateCompanionWindow() {
             if (!isCompanionActive) return;
 
-            const row = allData[currentIndex];
+            const row = getCurrentRow();
+            if (!row) return;
             const url = row["Issue URL"] || row.source_url || "";
             
             if (url) {
@@ -735,6 +1017,7 @@
             const statusEl = document.getElementById('loadingStatus');
             statusEl.textContent = "Loading dataset...";
             statusEl.style.display = 'block';
+            statusEl.style.color = '#334155';
             
             try {
                 // Attempt several candidate ways to fetch the CSV so it works under GH Pages
@@ -760,29 +1043,30 @@
                 if (!allData || allData.length === 0) {
                     throw new Error('Failed to load file via any candidate path' + (lastErr ? ': ' + lastErr.message : ''));
                 }
-                
-                if (!allData || allData.length === 0) throw new Error("File is empty.");
 
-                const selector = document.getElementById('issueSelector');
-                selector.innerHTML = '';
-                allData.forEach((row, index) => {
-                    const option = document.createElement('option');
-                    option.value = index;
-                    const id = row["Issue ID"] || row.query_id || index;
-                    const title = row["Issue Title"] || row.inputs?.query || "Untitled Issue";
-                    option.text = `${index + 1}. [${id}] ${title.substring(0, 60)}${title.length > 60 ? '...' : ''}`;
-                    selector.appendChild(option);
-                });
-
-                statusEl.style.display = 'none';
-                document.getElementById('contentArea').style.display = 'flex';
-                
                 currentIndex = 0;
-                updateDisplay();
+                activeTaxonomy = TAXONOMY_ALL;
+                buildTaxonomyMetadata(allData);
+                populateTaxonomyFilter();
+                applyTaxonomyFilter();
 
             } catch (e) {
                 statusEl.textContent = `Error: ${e.message}`;
                 statusEl.style.color = "red";
+                allData = [];
+                visibleData = [];
+                currentIndex = 0;
+                activeTaxonomy = TAXONOMY_ALL;
+                taxonomyCounts = new Map();
+                untaggedCount = 0;
+                buildTaxonomyMetadata([]);
+                populateTaxonomyFilter();
+                refreshIssueSelector();
+                updateTaxonomyStatus();
+                const contentArea = document.getElementById('contentArea');
+                if (contentArea) {
+                    contentArea.style.display = 'none';
+                }
             }
         }
 
@@ -790,15 +1074,27 @@
             // Save current before switching? (Optional, but good practice)
             // Note: We save on Prev/Next/Jump, but initial load doesn't need save.
             
-            const row = allData[currentIndex];
-            if (!row) return;
+            const row = getCurrentRow();
+            const selector = document.getElementById('issueSelector');
+            if (!row) {
+                if (selector) {
+                    selector.value = '';
+                }
+                const prevBtn = document.getElementById('prevButton');
+                const nextBtn = document.getElementById('nextButton');
+                if (prevBtn) prevBtn.disabled = true;
+                if (nextBtn) nextBtn.disabled = true;
+                return;
+            }
 
             // Update Dropdown Selection
-            document.getElementById('issueSelector').value = currentIndex;
+            if (selector) {
+                selector.value = String(currentIndex);
+            }
 
             // Update Navigation Buttons
             document.getElementById('prevButton').disabled = currentIndex === 0;
-            document.getElementById('nextButton').disabled = currentIndex === allData.length - 1;
+            document.getElementById('nextButton').disabled = currentIndex === visibleData.length - 1;
 
             // --- Populate Left Panel ---
             const issueId = row["Issue ID"] || row.query_id || "N/A";
@@ -817,6 +1113,10 @@
             setText('displayPriority', row["Priority"] || "N/A");
             setText('displayComponent', row["Component"] || "N/A");
             setText('displayWcag', row["wcag_sc"] || "N/A");
+            const taxonomyContainer = document.getElementById('displayTaxonomies');
+            if (taxonomyContainer) {
+                taxonomyContainer.innerHTML = renderTaxonomyChips(getTaxonomyList(row));
+            }
             setText('displayVersion', row["Version"] || "N/A");
             setText('displayCreated', row["Created"] || "N/A");
             setText('displayTitle', row["Issue Title"] || row.inputs?.query || "Untitled");
@@ -967,6 +1267,7 @@
 
         // --- Navigation Handlers ---
         function handlePrev() {
+            if (!visibleData.length) return;
             saveCurrentState();
             if (currentIndex > 0) {
                 currentIndex--;
@@ -975,24 +1276,29 @@
         }
 
         function handleNext() {
+            if (!visibleData.length) return;
             saveCurrentState();
-            if (currentIndex < allData.length - 1) {
+            if (currentIndex < visibleData.length - 1) {
                 currentIndex++;
                 updateDisplay();
             }
         }
 
         function handleJump(index) {
+            if (!visibleData.length) return;
             saveCurrentState();
-            currentIndex = parseInt(index);
+            const target = parseInt(index, 10);
+            if (Number.isNaN(target) || target < 0 || target >= visibleData.length) return;
+            currentIndex = target;
             updateDisplay();
         }
 
         function saveCurrentState() {
-            if (!allData[currentIndex]) return;
-            allData[currentIndex].val_score = document.getElementById('valScore').value;
-            allData[currentIndex].val_status = document.getElementById('valStatus').value;
-            allData[currentIndex].val_comment = document.getElementById('valComment').value;
+            const row = getCurrentRow();
+            if (!row) return;
+            row.val_score = document.getElementById('valScore').value;
+            row.val_status = document.getElementById('valStatus').value;
+            row.val_comment = document.getElementById('valComment').value;
         }
 
         // --- Utilities ---
@@ -1315,6 +1621,13 @@
             return html;
         }
 
+        function renderTaxonomyChips(tags) {
+            if (!tags || !tags.length) {
+                return '<span class="taxonomy-chip empty">No taxonomy</span>';
+            }
+            return tags.map(tag => `<span class="taxonomy-chip">${escapeHtml(tag)}</span>`).join('');
+        }
+
         function escapeHtml(text) {
             if (!text) return "";
             return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -1322,6 +1635,10 @@
 
         function saveData() {
             saveCurrentState();
+            if (!allData.length) {
+                alert('No dataset loaded.');
+                return;
+            }
             const headers = Object.keys(allData[0]);
             // Ensure validation fields are in headers if they weren't originally
             ['val_score', 'val_status', 'val_comment'].forEach(h => {

@@ -5,6 +5,89 @@ from datetime import datetime
 import time
 import re
 import os
+from functools import lru_cache
+
+def sanitize_drupal_tag_text(field_item):
+    """Extract only the visible tag label, excluding tooltip/helper text."""
+    link = field_item.find('a')
+    if link:
+        text = link.get_text(strip=True)
+        if text:
+            return text
+
+    text = field_item.get_text(separator=' ', strip=True)
+    if not text:
+        return ""
+
+    lowered = text.lower()
+    marker = 'about tags'
+    idx = lowered.find(marker)
+    if idx != -1:
+        text = text[:idx]
+
+    return text.strip()
+
+
+def normalize_taxonomy_values(values):
+    """Normalize taxonomy/label collections into a deduplicated pipe-delimited string."""
+    if not values:
+        return ""
+
+    if isinstance(values, str):
+        values = [values]
+
+    normalized = []
+    seen = set()
+    for raw in values:
+        if raw is None:
+            continue
+        text = str(raw).strip()
+        if not text:
+            continue
+        text = text.replace('|', '/').strip()
+        key = text.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized.append(text)
+    return "|".join(normalized)
+
+
+@lru_cache(maxsize=512)
+def fetch_drupal_issue_taxonomies(issue_url):
+    """Fetch Drupal issue tags (taxonomies) from the issue detail page."""
+    if not issue_url:
+        return []
+
+    try:
+        response = requests.get(issue_url, timeout=30)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
+        tags = []
+        seen = set()
+
+        for field in soup.select('div.field'):
+            label = field.find(class_='field-label')
+            if not label:
+                continue
+            label_text = label.get_text(strip=True).lower()
+            if 'issue tags' not in label_text:
+                continue
+            for item in field.select('.field-item'):
+                tag_text = sanitize_drupal_tag_text(item)
+                if not tag_text:
+                    continue
+                sanitized = tag_text.replace('|', '/').strip()
+                key = sanitized.lower()
+                if key in seen:
+                    continue
+                seen.add(key)
+                tags.append(sanitized)
+
+        return tags
+    except Exception as exc:
+        print(f"Warning: unable to fetch taxonomies for {issue_url}: {exc}")
+        return []
 
 def extract_github_issues(repo_full_name, tags=None, limit=50):
     print(f"Extracting GitHub issues for: {repo_full_name}")
@@ -73,6 +156,11 @@ def extract_github_issues(repo_full_name, tags=None, limit=50):
                         
                     issue_id = str(issue["number"])
                     if issue_id not in all_issues:
+                        issue_labels = [
+                            lbl.get("name", "").strip()
+                            for lbl in issue.get("labels", [])
+                            if lbl.get("name")
+                        ]
                         all_issues[issue_id] = {
                             "Issue ID": issue_id,
                             "Issue Title": issue["title"],
@@ -84,7 +172,8 @@ def extract_github_issues(repo_full_name, tags=None, limit=50):
                             "Component": "Unknown",
                             "Version": "Unknown",
                             "Created": issue["created_at"],
-                            "wcag_sc": "Unknown" # We'd need to parse labels or body for this
+                            "wcag_sc": "Unknown", # We'd need to parse labels or body for this
+                            "Taxonomies": normalize_taxonomy_values(issue_labels)
                         }
                 
                 if len(all_issues) >= limit:
@@ -218,6 +307,13 @@ def extract_drupal_issues(project_id, tags=None, limit=50):
                 
                 description = title 
 
+                issue_tags = fetch_drupal_issue_taxonomies(link)
+                normalized_tag = tag.replace('|', '/').strip() if tag else ""
+                if normalized_tag:
+                    normalized_lower = normalized_tag.lower()
+                    if not any(existing.lower() == normalized_lower for existing in issue_tags):
+                        issue_tags.append(normalized_tag)
+
                 all_issues[issue_id] = {
                     "Issue ID": issue_id,
                     "Issue Title": title,
@@ -229,7 +325,8 @@ def extract_drupal_issues(project_id, tags=None, limit=50):
                     "Component": component,
                     "Version": version,
                     "Created": created,
-                    "wcag_sc": current_wcag
+                    "wcag_sc": current_wcag,
+                    "Taxonomies": normalize_taxonomy_values(issue_tags)
                 }
                 
             except Exception as e:

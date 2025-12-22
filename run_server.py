@@ -3,6 +3,7 @@ import socketserver
 import os
 import json
 import glob
+from datetime import datetime, timezone
 from urllib.parse import urlparse, parse_qs
 
 PORT = 8000
@@ -27,6 +28,30 @@ def get_latest_file():
 # Default fallback
 DEFAULT_DATA_FILE = get_latest_file()
 
+def persist_dataset_manifest(datasets):
+    """Write discoverable manifest files for the frontend fallback logic."""
+    manifest = {
+        "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "datasets": datasets
+    }
+
+    manifest_targets = [
+        os.path.join('results', 'index.local.json'),
+        os.path.join('results', 'index.json'),
+        'datasets.json'
+    ]
+
+    for target in manifest_targets:
+        try:
+            dir_name = os.path.dirname(target)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
+            with open(target, 'w', encoding='utf-8') as handle:
+                json.dump(manifest, handle, indent=2)
+        except Exception as exc:
+            # Manifest creation should never crash the server; log and continue.
+            print(f"WARNING: Unable to write manifest {target}: {exc}")
+
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         parsed_path = urlparse(self.path)
@@ -42,40 +67,41 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             candidates = []
             candidates.extend(glob.glob("results/**/issues_thread_analyzed_*.csv", recursive=True))
             candidates.extend(glob.glob("results/**/issues_summarized_*.csv", recursive=True))
+            candidates.extend(glob.glob("results/**/issues_raw_*.csv", recursive=True))
             
             # Filter candidates: Must have "Issue URL" or "source_url" in header
-            valid_files = []
+            file_buckets = {}
             for fpath in candidates:
                 try:
                     with open(fpath, 'r', encoding='utf-8', errors='ignore') as f:
                         header = f.readline()
                         if "Issue URL" in header or "source_url" in header:
-                            valid_files.append(fpath)
+                            dirname = os.path.dirname(fpath)
+                            bucket = file_buckets.setdefault(dirname, {})
+                            if "issues_thread_analyzed_" in fpath:
+                                bucket['thread'] = fpath
+                            elif "issues_summarized_" in fpath:
+                                bucket['summary'] = fpath
+                            elif "issues_raw_" in fpath:
+                                bucket['raw'] = fpath
                 except Exception:
                     continue
 
-            # Remove duplicates if any
-            valid_files = list(set(valid_files))
-            
-            # Filter out summarized files if a thread_analyzed file exists for the same run
-            # Assumption: Files are in the same directory
+            # Select the best available dataset per directory (thread > summarized > raw)
             final_files = []
-            thread_analyzed_dirs = set()
-            
-            # First pass: identify directories that have thread_analyzed files
-            for fpath in valid_files:
-                if "issues_thread_analyzed_" in fpath:
-                    thread_analyzed_dirs.add(os.path.dirname(fpath))
-            
-            # Second pass: add files, skipping summarized if thread_analyzed exists in same dir
-            for fpath in valid_files:
-                dirname = os.path.dirname(fpath)
-                if "issues_summarized_" in fpath and dirname in thread_analyzed_dirs:
-                    continue
-                final_files.append(fpath)
+            for bucket in file_buckets.values():
+                if 'thread' in bucket:
+                    final_files.append(bucket['thread'])
+                elif 'summary' in bucket:
+                    final_files.append(bucket['summary'])
+                elif 'raw' in bucket:
+                    final_files.append(bucket['raw'])
             
             # Sort files to show newest first (by modification time)
             final_files.sort(key=os.path.getmtime, reverse=True)
+
+            # Persist a manifest so static hosting (e.g., GitHub Pages) can discover datasets
+            persist_dataset_manifest(final_files)
             
             self.wfile.write(json.dumps(final_files).encode())
             return
