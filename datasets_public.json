@@ -2,28 +2,28 @@
   "generated": "2025-12-24T00:00:00Z",
   "datasets": [
     {
-      "label": "Drupal Core backlog · Gemma (Dec 16, 2025)",
-      "path": "site-data/drupal-gemma34b-12-16-2025/issues_thread_analyzed_20251216.csv",
+      "label": "Drupal Core default · Dec 21, 2025",
+      "path": "site-data/drupal-default-12-21-2025/issues_thread_analyzed_20251221.csv",
+      "project": "Drupal core",
+      "model": "Gemini default",
+      "issues": 30,
+      "description": "Baseline Gemini pipeline run that seeded the shared palette update work. Shows how the default prompt handles WCAG triage across 30 issues."
+    },
+    {
+      "label": "Drupal Core default · Dec 22, 2025",
+      "path": "site-data/drupal-default-12-22-2025/issues_thread_analyzed_20251222.csv",
+      "project": "Drupal core",
+      "model": "Gemini default",
+      "issues": 30,
+      "description": "Most recent default run for Drupal core, captured after palette tuning. Useful for spotting regressions or improvements versus the Dec 21 export."
+    },
+    {
+      "label": "Drupal Core · Gemma 3 (Dec 17, 2025)",
+      "path": "site-data/drupal-gemma34b-12-17-2025/issues_thread_analyzed_20251217.csv",
       "project": "Drupal core",
       "model": "Gemma 3 4B",
-      "issues": 10,
-      "description": "Focuses on WCAG-tagged issues collected from the Drupal core queue and threaded through the Gemma 3 summarizer."
-    },
-    {
-      "label": "CKEditor 5 triage · GPT-OSS (Dec 17, 2025)",
-      "path": "site-data/ckeditor-ckeditor5-gpt-oss20b-12-17-2025/issues_thread_analyzed_20251217.csv",
-      "project": "CKEditor 5",
-      "model": "GPT-OSS 20B",
-      "issues": 25,
-      "description": "Explores authoring-experience bugs for CKEditor 5 with emphasis on keyboard and screen reader regressions."
-    },
-    {
-      "label": "Craft CMS backlog · GPT-OSS (Dec 16, 2025)",
-      "path": "site-data/craftcms-cms-gpt-oss20b-12-16-2025/issues_thread_analyzed_20251216.csv",
-      "project": "Craft CMS",
-      "model": "GPT-OSS 20B",
-      "issues": 6,
-      "description": "Sample export from the Craft CMS tracker showing how the pipeline clusters and annotates accessibility issues."
+      "issues": 30,
+      "description": "Alternative Gemma 3 pass over the same backlog so reviewers can compare tone, precision, and WCAG mapping against the Gemini outputs."
     }
   ]
 }
