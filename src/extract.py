@@ -229,6 +229,23 @@ def extract_drupal_issues(project_id, tags=None, limit=50):
         tags_to_search.extend([f"wcag{sc}" for sc in sc_list])
     
     all_issues = {} # Use dict with Issue ID as key to deduplicate
+    error_count = 0
+
+    def register_error():
+        nonlocal error_count
+        error_count += 1
+        if error_count == 2:
+            wait = 5
+            print(f"Encountered {error_count} errors. Pausing for {wait} seconds before continuing...")
+            time.sleep(wait)
+        elif error_count == 5:
+            wait = 30
+            print(f"Encountered {error_count} errors. Pausing for {wait} seconds before continuing...")
+            time.sleep(wait)
+        elif error_count >= 10:
+            print("Encountered 10 errors. Stopping extraction early to avoid spamming the server.")
+            return True
+        return False
 
     for tag in tags_to_search:
         params = {
@@ -250,6 +267,8 @@ def extract_drupal_issues(project_id, tags=None, limit=50):
                 if response.status_code == 429:
                     wait = backoff * (attempt + 1)
                     print(f"Rate limited (429). Waiting {wait} seconds...")
+                    if register_error():
+                        return pd.DataFrame(list(all_issues.values()))
                     time.sleep(wait)
                     continue
                     
@@ -257,10 +276,14 @@ def extract_drupal_issues(project_id, tags=None, limit=50):
                 break # Success
             except Exception as e:
                 print(f"Error fetching tag '{tag}': {e}")
+                if register_error():
+                    return pd.DataFrame(list(all_issues.values()))
                 time.sleep(1)
         
         if not response or response.status_code != 200:
             print(f"Failed to fetch tag '{tag}' after retries.")
+            if register_error():
+                return pd.DataFrame(list(all_issues.values()))
             continue
 
         soup = BeautifulSoup(response.content, 'html.parser')
