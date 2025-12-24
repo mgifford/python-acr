@@ -186,6 +186,104 @@
             display: none; 
         }
 
+        /* --- Welcome / Intro Panel --- */
+        .welcome-panel {
+            width: 100%;
+            display: none;
+            justify-content: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 45%, #f1f5f9 100%);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .welcome-card {
+            width: 100%;
+            max-width: 960px;
+            background: #fff;
+            border: 1px solid #dbeafe;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        .welcome-card h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            color: #1e293b;
+        }
+
+        .welcome-card p {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #475569;
+        }
+
+        .welcome-card ul {
+            margin: 0 0 20px 20px;
+            padding: 0;
+            color: #334155;
+        }
+
+        .welcome-message {
+            margin: 15px 0;
+            padding: 10px 14px;
+            border-left: 3px solid #f97316;
+            background: #fff7ed;
+            color: #9a3412;
+            display: none;
+        }
+
+        .welcome-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .welcome-dataset-card {
+            background: #f8fafc;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 180px;
+        }
+
+        .welcome-dataset-card h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: #0f172a;
+        }
+
+        .welcome-dataset-meta {
+            font-size: 0.85rem;
+            color: #475569;
+        }
+
+        .welcome-dataset-button {
+            margin-top: auto;
+            align-self: flex-start;
+            padding: 8px 14px;
+            background: #1d4ed8;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .welcome-dataset-button:hover {
+            background: #1e40af;
+        }
+
+        .welcome-footnote {
+            margin-top: 24px;
+            font-size: 0.85rem;
+            color: #475569;
+        }
+
         /* --- Cards in Review Panel --- */
         .card {
             background: var(--card-bg);
@@ -378,7 +476,22 @@
     </header>
 
     <div class="main-container">
-        <div class="review-panel" id="reviewPanel">
+        <div id="welcomePanel" class="welcome-panel">
+            <div class="welcome-card">
+                <h2>Human-in-the-loop accessibility triage</h2>
+                <p>This GitHub Pages build only exposes a handful of curated, read-only datasets so we can tell the story without leaking private work. Every summary is a draft analytical artifact sourced from public issue queues. Nothing here is an authoritative Accessibility Conformance Report.</p>
+                <ul>
+                    <li>Focus: recent WCAG-related issues from Drupal core and allied CMS projects.</li>
+                    <li>Models: Gemini, Gemma, and GPT-OSS runs across different days to compare tone and recall.</li>
+                    <li>Expectation: human experts verify every field before making claims.</li>
+                </ul>
+                <div id="welcomeMessage" class="welcome-message"></div>
+                <div id="welcomeDatasetGrid" class="welcome-grid"></div>
+                <p class="welcome-footnote">Tip: to explore your own exports locally, run <code>python run_server.py</code> and open <code>http://localhost:8000</code>. Then you can load any dataset from <code>results/</code> without publishing it.</p>
+            </div>
+        </div>
+
+        <div class="review-panel" id="reviewPanel" style="display:none;">
             <div id="loadingStatus" style="padding: 25px;">Loading data...</div>
             
             <!-- Content will be injected here -->
@@ -542,6 +655,7 @@
         const DATA_ENDPOINT = '/data/llm_feedback_data.json';
         const TAXONOMY_ALL = '__all__';
         const TAXONOMY_UNTAGGED = '__untagged__';
+        const PUBLISHED_DATASET_MANIFEST = 'datasets_public.json';
         let allData = [];
         let visibleData = [];
         let currentIndex = 0;
@@ -550,6 +664,8 @@
         let activeTaxonomy = TAXONOMY_ALL;
         let taxonomyCounts = new Map();
         let untaggedCount = 0;
+        let datasetCatalog = [];
+        let hostedContext = false;
 
         // Resizer functionality
         const resizer = document.getElementById('resizer');
@@ -586,6 +702,190 @@
                     document.body.style.userSelect = '';
                 }
             });
+        }
+
+        function isHostedEnvironment() {
+            try {
+                return !shouldPreferLocalIndex();
+            } catch (e) {
+                return true;
+            }
+        }
+
+        function showWelcomePanel(message) {
+            const panel = document.getElementById('welcomePanel');
+            if (!panel) return;
+            panel.style.display = 'flex';
+            const messageEl = document.getElementById('welcomeMessage');
+            if (messageEl) {
+                if (message) {
+                    messageEl.textContent = message;
+                    messageEl.style.display = 'block';
+                } else {
+                    messageEl.textContent = '';
+                    messageEl.style.display = 'none';
+                }
+            }
+        }
+
+        function hideWelcomePanel() {
+            const panel = document.getElementById('welcomePanel');
+            if (!panel) return;
+            panel.style.display = 'none';
+            const messageEl = document.getElementById('welcomeMessage');
+            if (messageEl) {
+                messageEl.textContent = '';
+                messageEl.style.display = 'none';
+            }
+        }
+
+        function setDatasetSelection(path) {
+            if (!path) return;
+            const selector = document.getElementById('datasetSelector');
+            if (!selector) return;
+            for (const option of selector.options) {
+                if (option.value === path) {
+                    selector.value = path;
+                    return;
+                }
+            }
+        }
+
+        function getDatasetMeta(path) {
+            if (!path) return null;
+            return datasetCatalog.find(entry => entry.path === path) || null;
+        }
+
+        function populateWelcomeDatasets(entries) {
+            const panel = document.getElementById('welcomePanel');
+            const grid = document.getElementById('welcomeDatasetGrid');
+            const messageEl = document.getElementById('welcomeMessage');
+            if (!panel || !grid) return;
+            grid.innerHTML = '';
+
+            if (!hostedContext) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            panel.style.display = 'flex';
+
+            if (!entries || !entries.length) {
+                if (messageEl) {
+                    messageEl.textContent = 'No published datasets are available yet. Add entries to datasets_public.json to curate this gallery.';
+                    messageEl.style.display = 'block';
+                }
+                return;
+            }
+
+            if (messageEl) {
+                messageEl.textContent = '';
+                messageEl.style.display = 'none';
+            }
+
+            entries.slice(0, 6).forEach(entry => {
+                const card = document.createElement('article');
+                card.className = 'welcome-dataset-card';
+                const metaBits = [];
+                if (entry.project) metaBits.push(entry.project);
+                if (entry.model) metaBits.push(entry.model);
+                if (entry.issues) metaBits.push(`${entry.issues} issues`);
+                const metaLine = metaBits.join(' • ');
+                card.innerHTML = `
+                    <h3>${escapeHtml(entry.label)}</h3>
+                    ${metaLine ? `<p class="welcome-dataset-meta">${escapeHtml(metaLine)}</p>` : ''}
+                    <p>${escapeHtml(entry.description || 'Curated accessibility export')}</p>
+                `;
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'welcome-dataset-button';
+                button.textContent = 'Load dataset';
+                button.addEventListener('click', () => {
+                    setDatasetSelection(entry.path);
+                    hideWelcomePanel();
+                    loadSelectedDataset(entry.path);
+                });
+                card.appendChild(button);
+                grid.appendChild(card);
+            });
+        }
+
+        function formatDatasetLabel(entry) {
+            const base = entry.label || deriveDatasetLabelFromPath(entry.path);
+            const parts = [];
+            if (entry.project) parts.push(entry.project);
+            if (entry.model) parts.push(entry.model);
+            return parts.length ? `${base} — ${parts.join(' • ')}` : base;
+        }
+
+        function deriveDatasetLabelFromPath(path) {
+            if (!path) return 'Dataset';
+            const segments = path.split('/').filter(Boolean);
+            if (segments.length >= 2) {
+                const folder = segments[segments.length - 2];
+                const file = segments[segments.length - 1];
+                return `${folder}/${file}`;
+            }
+            return path;
+        }
+
+        function normalizeDatasets(raw) {
+            if (!raw) return [];
+            const normalized = [];
+
+            const pushEntry = (entry) => {
+                if (!entry) return;
+                const candidatePath = entry.path || entry.file || entry.url;
+                if (!candidatePath) return;
+                normalized.push({
+                    path: candidatePath,
+                    label: entry.label || entry.name || deriveDatasetLabelFromPath(candidatePath),
+                    description: entry.description || entry.summary || '',
+                    project: entry.project || entry.repo || '',
+                    model: entry.model || entry.ai_model || '',
+                    issues: entry.issues || entry.count || entry.issue_count || '',
+                    visibility: entry.visibility || 'public'
+                });
+            };
+
+            const handleItem = (item) => {
+                if (!item) return;
+                if (typeof item === 'string') {
+                    pushEntry({ path: item });
+                } else if (Array.isArray(item)) {
+                    item.forEach(handleItem);
+                } else if (typeof item === 'object') {
+                    if (item.datasets && Array.isArray(item.datasets)) {
+                        item.datasets.forEach(handleItem);
+                    } else {
+                        pushEntry(item);
+                    }
+                }
+            };
+
+            handleItem(raw);
+            return normalized;
+        }
+
+        async function loadPublishedManifest() {
+            const candidates = buildPathCandidates(PUBLISHED_DATASET_MANIFEST);
+            for (const candidate of candidates) {
+                try {
+                    const resp = await fetch(candidate);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data && data.datasets) {
+                            return data;
+                        }
+                        if (Array.isArray(data)) {
+                            return { datasets: data };
+                        }
+                    }
+                } catch (e) {
+                    // try next candidate
+                }
+            }
+            return null;
         }
 
         function getCurrentRow() {
@@ -852,137 +1152,97 @@
         }
 
         async function loadDataAutomatically() {
+            hostedContext = isHostedEnvironment();
+            if (hostedContext) {
+                showWelcomePanel();
+            }
             await loadDatasets();
         }
 
         async function loadDatasets() {
             console.log("Loading datasets...");
 
-            // Helper: try the dynamic API first (works when running local server),
-            // otherwise fall back to a static datasets.json file (works on GitHub Pages).
             async function tryApiThenStatic() {
-                    // 1) Try local API (works when you run `run_server.py` locally)
+                try {
+                    const response = await fetch('/api/datasets');
+                    if (response.ok) {
+                        const files = await response.json();
+                        if (files && files.length) return files;
+                    }
+                } catch (e) {
+                    // ignore and try static discovery
+                }
+
+                const preferLocalIndex = shouldPreferLocalIndex();
+                const indexFiles = preferLocalIndex
+                    ? ['results/index.local.json', 'results/index.json']
+                    : ['results/index.json', 'results/index.local.json'];
+                const indexCandidates = [];
+                const seenIndex = new Set();
+                for (const fileName of indexFiles) {
+                    for (const candidate of buildPathCandidates(fileName)) {
+                        if (!seenIndex.has(candidate)) {
+                            indexCandidates.push(candidate);
+                            seenIndex.add(candidate);
+                        }
+                    }
+                }
+
+                for (const ic of indexCandidates) {
                     try {
-                        const response = await fetch('/api/datasets');
-                        if (response.ok) {
-                            const files = await response.json();
-                            if (files && files.length) return files;
+                        const rr = await fetch(ic);
+                        if (rr.ok) {
+                            try {
+                                const parsed = await rr.json();
+                                if (Array.isArray(parsed) && parsed.length) {
+                                    if (parsed.length === 1 && parsed[0] && typeof parsed[0] === 'object' && parsed[0].datasets) {
+                                        return parsed[0].datasets;
+                                    }
+                                    return parsed;
+                                }
+                                if (parsed && parsed.datasets) return parsed.datasets;
+                            } catch (e) {
+                                console.error('Failed parsing results/index.json at', ic, e);
+                            }
                         }
                     } catch (e) {
-                        // ignore and try static discovery
-                    }
-
-                    // 2) Try to discover a results index (if you pre-generate one for GH Pages)
-                    //    e.g. results/index.json listing available result CSVs. This is optional
-                    //    but recommended if you want GH Pages to auto-discover available runs.
-                    const preferLocalIndex = shouldPreferLocalIndex();
-                    const indexFiles = preferLocalIndex
-                        ? ['results/index.local.json', 'results/index.json']
-                        : ['results/index.json', 'results/index.local.json'];
-                    const indexCandidates = [];
-                    const seenIndex = new Set();
-                    for (const fileName of indexFiles) {
-                        for (const candidate of buildPathCandidates(fileName)) {
-                            if (!seenIndex.has(candidate)) {
-                                indexCandidates.push(candidate);
-                                seenIndex.add(candidate);
-                            }
-                        }
-                    }
-
-                    for (const ic of indexCandidates) {
-                        try {
-                            const rr = await fetch(ic);
-                            if (rr.ok) {
-                                try {
-                                    const parsed = await rr.json();
-                                    if (Array.isArray(parsed) && parsed.length) {
-                                        // If it's an array containing a single object with a 'datasets' key,
-                                        // normalize to that inner array (this supports datasets.json fallback format)
-                                        if (parsed.length === 1 && parsed[0] && typeof parsed[0] === 'object' && parsed[0].datasets) {
-                                            return parsed[0].datasets;
-                                        }
-                                        return parsed;
-                                    }
-                                    // If parsed is an object with datasets, normalize
-                                    if (parsed && parsed.datasets) return parsed.datasets;
-                                } catch (e) {
-                                    console.error('Failed parsing results/index.json at', ic, e);
-                                }
-                            }
-                        } catch (e) {
-                            // continue
-                        }
-                    }
-
-                    // 3) Finally, fall back to the static fallback `datasets.json` committed with the site
-                    const candidates = [];
-                    const seenDatasets = new Set();
-                    for (const candidate of buildPathCandidates('datasets.json')) {
-                        if (!seenDatasets.has(candidate)) {
-                            candidates.push(candidate);
-                            seenDatasets.add(candidate);
-                        }
-                    }
-
-                    for (const c of candidates) {
-                        try {
-                            const rr = await fetch(c);
-                            if (rr.ok) {
-                                try {
-                                    const parsed = await rr.json();
-                                    // Accept either the old array format or new fallback object
-                                    if (Array.isArray(parsed)) {
-                                        if (parsed.length === 1 && parsed[0] && typeof parsed[0] === 'object' && parsed[0].datasets) {
-                                            return parsed[0].datasets;
-                                        }
-                                        return parsed;
-                                    }
-                                    if (parsed && parsed.datasets) return parsed.datasets;
-                                } catch (e) {
-                                    console.error('Failed parsing datasets.json at', c, e);
-                                }
-                            }
-                        } catch (e) {
-                            // try next candidate
-                        }
-                    }
-
-                    return [];
-            }
-
-            let files = await tryApiThenStatic();
-            // Normalize returned files into an array of string paths
-            function normalizeFiles(raw) {
-                if (!raw) return [];
-                // If object with datasets
-                if (!Array.isArray(raw) && raw.datasets) {
-                    raw = raw.datasets;
-                }
-                if (!Array.isArray(raw)) return [];
-                const out = [];
-                for (const item of raw) {
-                    if (!item) continue;
-                    if (typeof item === 'string') { out.push(item); continue; }
-                    if (Array.isArray(item)) {
-                        // flatten nested arrays
-                        for (const sub of item) if (typeof sub === 'string') out.push(sub);
-                        continue;
-                    }
-                    if (typeof item === 'object') {
-                        // common fields to check
-                        if (item.path) out.push(item.path);
-                        else if (item.file) out.push(item.file);
-                        else if (item.url) out.push(item.url);
-                        else if (item.datasets && Array.isArray(item.datasets)) out.push(...item.datasets);
-                        // otherwise skip unknown object shape
+                        // keep trying other candidates
                     }
                 }
-                return out;
-            }
 
-            files = normalizeFiles(files);
-            console.log('Found files:', files);
+                const candidates = [];
+                const seenDatasets = new Set();
+                for (const candidate of buildPathCandidates('datasets.json')) {
+                    if (!seenDatasets.has(candidate)) {
+                        candidates.push(candidate);
+                        seenDatasets.add(candidate);
+                    }
+                }
+
+                for (const c of candidates) {
+                    try {
+                        const rr = await fetch(c);
+                        if (rr.ok) {
+                            try {
+                                const parsed = await rr.json();
+                                if (Array.isArray(parsed)) {
+                                    if (parsed.length === 1 && parsed[0] && typeof parsed[0] === 'object' && parsed[0].datasets) {
+                                        return parsed[0].datasets;
+                                    }
+                                    return parsed;
+                                }
+                                if (parsed && parsed.datasets) return parsed.datasets;
+                            } catch (e) {
+                                console.error('Failed parsing datasets.json at', c, e);
+                            }
+                        }
+                    } catch (e) {
+                        // try next candidate
+                    }
+                }
+
+                return [];
+            }
 
             const selector = document.getElementById('datasetSelector');
             if (!selector) {
@@ -990,26 +1250,74 @@
                 return;
             }
 
+            const hosted = hostedContext;
+            let files = [];
+
+            if (hosted) {
+                const manifest = await loadPublishedManifest();
+                if (manifest && manifest.datasets && manifest.datasets.length) {
+                    files = manifest.datasets;
+                }
+            }
+
+            if (!files.length) {
+                files = await tryApiThenStatic();
+            }
+
+            datasetCatalog = normalizeDatasets(files);
+            populateWelcomeDatasets(datasetCatalog);
             selector.innerHTML = '';
-            if (!files || files.length === 0) {
+
+            const loadingEl = document.getElementById('loadingStatus');
+            if (loadingEl) {
+                loadingEl.style.color = '#475569';
+            }
+
+            if (!datasetCatalog.length) {
                 const option = document.createElement('option');
-                option.text = 'No datasets found';
+                option.value = '';
+                option.text = 'No datasets available';
+                option.disabled = true;
+                option.selected = true;
                 selector.appendChild(option);
+                if (loadingEl) {
+                    loadingEl.style.display = 'block';
+                    loadingEl.textContent = 'No datasets available. Add entries to datasets_public.json or run a local server to expose /api/datasets.';
+                }
+                showWelcomePanel('No published datasets available yet. Update datasets_public.json to expose curated runs.');
+                const panel = document.getElementById('reviewPanel');
+                if (panel) panel.style.display = 'none';
                 return;
             }
 
-            files.forEach(file => {
+            if (hosted) {
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.text = 'Select a published dataset…';
+                placeholder.disabled = true;
+                placeholder.selected = true;
+                selector.appendChild(placeholder);
+            }
+
+            datasetCatalog.forEach(entry => {
                 const option = document.createElement('option');
-                option.value = file;
-                const parts = file.split('/');
-                const name = parts[parts.length - 1];
-                const folder = parts.length > 2 ? parts[parts.length - 2] : '';
-                option.text = folder ? `${folder}/${name}` : name;
+                option.value = entry.path;
+                option.text = formatDatasetLabel(entry);
                 selector.appendChild(option);
             });
 
-            selector.value = files[0];
-            loadSelectedDataset(files[0]);
+            if (hosted) {
+                if (loadingEl) {
+                    loadingEl.style.display = 'block';
+                    loadingEl.textContent = 'Select a dataset to begin.';
+                }
+                showWelcomePanel();
+            } else {
+                hideWelcomePanel();
+                const first = datasetCatalog[0];
+                selector.value = first.path;
+                loadSelectedDataset(first.path);
+            }
         }
 
         async function loadSelectedDataset(file) {
@@ -1049,9 +1357,12 @@
                 buildTaxonomyMetadata(allData);
                 populateTaxonomyFilter();
                 applyTaxonomyFilter();
+                const panel = document.getElementById('reviewPanel');
+                if (panel) panel.style.display = 'flex';
+                hideWelcomePanel();
 
             } catch (e) {
-                statusEl.textContent = `Error: ${e.message}`;
+                statusEl.textContent = `Error loading dataset: ${e.message}`;
                 statusEl.style.color = "red";
                 allData = [];
                 visibleData = [];
@@ -1067,6 +1378,9 @@
                 if (contentArea) {
                     contentArea.style.display = 'none';
                 }
+                showWelcomePanel('We could not load that dataset. Please pick another published run or download the CSV to inspect locally.');
+                const panel = document.getElementById('reviewPanel');
+                if (panel) panel.style.display = 'none';
             }
         }
 
