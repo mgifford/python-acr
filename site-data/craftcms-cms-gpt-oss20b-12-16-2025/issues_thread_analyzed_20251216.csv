@@ -1,0 +1,171 @@
+Issue ID,Issue Title,Description,Issue URL,Project,Status,Priority,Component,Version,Created,wcag_sc,ai_wcag,acr_note,dev_note,thread_tldr,thread_problem,thread_sentiment,thread_timeline,thread_links
+17687,[5.x]: Manual sorting of routes is not accessible,"### What happened?
+
+### Description
+
+I was looking for a way to define the order of precedences for routes defined in Settings → Routes in the Control Panel. I discovered by accident that you can drag-and-drop the routes to rearrange them, and that the order in which they are placed determines the precedence if more than one route can apply to a given URL.
+
+I can't find any documentation for this feature, and the interface doesn't provide any affordance for this UI interaction.
+
+### Expected behavior
+
+- Add drag handles to the routes to indicate that they can be rearranged through drag-and-drop, similar to elements in a structure.
+- The fact that the order of the routes determines the order of precedence should be noted on that page itself, and/or in the [documentation on dynamic routes](https://craftcms.com/docs/5.x/system/routing.html#dynamic-routes).
+- I don't think there's a keyboard alternative for the drag-and-drop interaction, that should probably be added as well?
+
+### Craft CMS version
+
+5.8.11
+
+### PHP version
+
+8.3
+
+### Operating system and version
+
+_No response_
+
+### Database type and version
+
+_No response_
+
+### Image driver and version
+
+_No response_
+
+### Installed plugins and versions
+
+-
+",https://github.com/craftcms/cms/issues/17687,craftcms/cms,open,Unknown,Unknown,Unknown,2025-07-29T14:56:35Z,Unknown,2.1.1,"In the Control Panel, routes can be reordered via drag‑and‑drop, but the UI lacks any visual affordance (e.g., drag handles) and does not provide a keyboard alternative. This omission makes the sorting functionality inaccessible to users who rely on keyboard navigation or assistive technologies.",Implement an accessible sortable list for routes:,"The issue reports that the manual route sorting UI in Craft CMS 5.x lacks accessible affordances and keyboard alternatives. A PR has been opened to add drag handles and an actions menu, but the accessibility of the new UI is not yet confirmed, so the issue remains unresolved.","In Settings → Routes, routes can be reordered via drag‑and‑drop but the interface provides no visual affordance for this action and no keyboard equivalent. This violates WCAG 2.1 2.1.1 (Keyboard) and 2.5.1 (Pointer Gestures), making it inaccessible for users who rely on keyboard or assistive technology.","Minimal engagement. Only a bot comment and a single developer reply were posted, with no further discussion or confirmation of a fix.","# 1 linear[bot]: Posted a link to CMS‑1510. # 2 i‑just: Responded, stating a PR has been raised to add drag handles and reorder options.",- [CMS‑1510](https://github.com/craftcms/craft/issues/CMS-1510): Related issue for route sorting. - [WCAG 2.1 – 2.1.1 Keyboard](https://www.w3.org/TR/WCAG22/#keyboard-operation): Keyboard interaction requirement. - [WCAG 2.1 – 2.5.1 Pointer Gestures](https://www.w3.org/TR/WCAG22/#pointer-gestures): Drag‑and‑drop interaction guideline. - [MDN – Drag and Drop API](https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API): Implementation guidance. - [CraftCMS Documentation: Dynamic Routes](https://craftcms.com/docs/5.x/system/routing.html#dynamic-routes): Explains route precedence.
+7541,Register new user- accessibility,"### Below is an overview of accessibility issues on the Register New User page
+
+#### Account
+
+- The Account and Permissions tabs need appropriate role, state  and properties- see [aria example with automatic activation](https://www.w3.org/TR/wai-aria-practices-1.2/examples/tabs/tabs-1/tabs.html) and [aria example with manual activation](https://www.w3.org/TR/wai-aria-practices-1.2/examples/tabs/tabs-2/tabs.html) (Fixed with #10606)
+![tabs](https://user-images.githubusercontent.com/47136246/107581543-21e65b80-6bf0-11eb-8753-ad36b4a0e301.png) 
+- Status update for not being able to save a user not picked up by screen reader software, although it wouldn’t need to be picked up if the following point was implemented
+![status](https://user-images.githubusercontent.com/47136246/107581471-04b18d00-6bf0-11eb-8a28-b3832cd89863.png)
+- It would be good if the error messages were associated with input fields using `aria-describedby` and the keyboard focus was moved to  the first incorrect field 
+- It would be good to either move the save button below the form or to make sure it is part of  the `<form>` element  so that the user can just hit enter to save changes
+
+#### Permissions
+
+- Checkboxes should be grouped to provide context
+- The select All elements are not keyboard accessible
+- There is 1.47:1 contrast ratio between the dark body text and the Select All elements. Technically, bumping contrast ratio to at least 3:1 would work for WCAG compliance but I’d recommend using another visual clue, e.g. underline, or border with 3:1 contrast ratio against the background
+- Information buttons need aria-expanded and aria-controls; I also think it would be better if they didn’t receive keyboard focus when the checkbox is disabled and their name was more descriptive (e.g. More about moderate users)
+![pop-ups](https://user-images.githubusercontent.com/47136246/107581583-332f6800-6bf0-11eb-9724-9646c4459b63.png)
+
+
+
+### Additional info
+
+- Craft version: 3.6.5
+",https://github.com/craftcms/cms/issues/7541,craftcms/cms,open,Unknown,Unknown,Unknown,2021-02-10T22:35:38Z,Unknown,4.1.2,"The Register New User page fails to meet multiple accessibility requirements. Tab navigation lacks the necessary ARIA roles, states, and properties, making the tab structure inaccessible and confusing for assistive technology users. Status updates for failed saves are not announced by screen readers. Error messages are not associated with their respective input fields, and focus is not moved to the first invalid field, violating best practices for error identification and focus management. The form's save button is not within a `<form>` element and is positioned awkwardly, preventing users from submitting the form via the Enter key. Checkboxes are not grouped, select‑all controls are not keyboard accessible, and their text contrast ratio is only 1.47:1, far below the WCAG minimum for UI components. Information buttons lack `aria-expanded` and `aria-controls` attributes and receive keyboard focus even when disabled. These barriers collectively hinder users with visual, motor, and cognitive impairments from fully interacting with the registration functionality.",,"The Register New User page has several accessibility deficiencies – missing ARIA roles on tabs, poor keyboard focus handling, insufficient contrast, and mis‑described controls.  While some fixes (e.g., ARIA tabs) were merged in PR #10606, many of the other issues remain unaddressed and the thread contains no further discussion.","The page fails to meet WCAG 2.1 requirements for accessible rich internet applications: * **ARIA roles/states** – Account and Permissions tabs lack the correct `role=""tab""`/`role=""tabpanel""` structure and activation states (WCAG 4.1.2, 4.1.3). * **Screen‑reader announcements** – Status updates (e.g., “user not picked up”) are not exposed, preventing users from hearing form results (WCAG 4.1.2). * **Error handling** – Validation messages are not linked to their input fields via `aria-describedby`, and focus is not moved to the first invalid field, violating WCAG 4.1.2 and 3.3.2. * **Keyboard navigation** – “Select All” elements are not focusable, and information buttons are accessible even when the corresponding checkbox is disabled, breaking WCAG 2.1 2.1.1. * **Contrast** – The “Select All” text has a 1.47:1 contrast ratio with the background, far below the WCAG 2.1 1.4.3 minimum of 3:1 for text that conveys information (WCAG 2.1 1.4.5).","Minimal engagement – the issue was reported, a few fixes were merged, but no further discussion or resolution tracking is present.",# 1 reporter: Filed initial bug report. No further discussion.,- [WAI‑ARIA Tabs – Automatic Activation Example](https://www.w3.org/TR/wai-aria-practices-1.2/examples/tabs/tabs-1/tabs.html): Example of properly activated tabs. - [WAI‑ARIA Tabs – Manual Activation Example](https://www.w3.org/TR/wai-aria-practices-1.2/examples/tabs/tabs-2/tabs.html): Example of manually activated tabs. - [WCAG 2.1 Success Criterion 1.4.3 – Contrast (Minimum)](https://www.w3.org/TR/WCAG21/#contrast-minimum): Minimum contrast ratio for text. - [MDN – aria‑describedby](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-describedby): How to associate error messages with inputs. - [PR #10606 – Fix ARIA tabs on Register New User page](https://github.com/owner/repo/pull/10606): The merge that addressed the tab ARIA roles and states.
+7486,Accessibility of Users landing page,"### Overview of accessibility issues found on the Users landing page
+
+- Status updates are not picked up by screen readers-  “User unsuspended”,  ""User suspended"", “User deleted”
+![status-update](https://user-images.githubusercontent.com/47136246/106673059-f8528200-65a8-11eb-8700-d7583126f807.png)
+- Dialog for deleting a user would benefit from `role=”dialog` and an accessible name
+![remove -selected-user](https://user-images.githubusercontent.com/47136246/106673398-7151d980-65a9-11eb-94ed-e0ef32ad1098.png)
+- The same dialog does not trap keyboard focus
+- The remove button that deletes selected user is not keyboard accessible
+- Label for transferring content to another user might be a bit confusing, it says “transfer to”; my suggestion is to give the radio button the “transfer to another user” label and append the choose user button below the radio buttons
+- It would also be good to wrap those radio buttons with `role=”radiogroup”` and associate the legend using `aria-labelledby`
+- It’s not possible to select a user that I would like to transfer the content to when using the keyboard only
+- Checkboxes in the thumbnail view should have `role=”checkbox”` and `aria-checked`; it’s also a bit confusing that they can be navigated using arrow keys only; I think that it would be better if each of them  was a Tab stop
+![checkboxes](https://user-images.githubusercontent.com/47136246/106673582-b7a73880-65a9-11eb-8791-b2e2130aeea1.png)
+- Icons for user status (e.g ""Active"") should have a text alternative and they should not rely on colour perception only
+- Edit user pop-up would benefit from role=”dialog” and an accessible name
+![error](https://user-images.githubusercontent.com/47136246/106673700-ee7d4e80-65a9-11eb-89d1-13ec6855f466.png)
+- Error message for missing the required field in the edit pop-up not communicated to screen reader users; my suggestion is to move keyboard focus to the incorrect field and associate the error message with the input using `aria-describedby`
+- Username field in the edit user popup would benefit from the `required `attribute
+
+
+
+
+
+
+### Additional info
+
+- Craft version: 3.6.0.1
+
+",https://github.com/craftcms/cms/issues/7486,craftcms/cms,open,Unknown,Unknown,Unknown,2021-02-02T22:59:38Z,Unknown,4.1.2,"The Users landing page fails to meet several accessibility requirements. Status updates (“User suspended”, “User deleted”, etc.) are not announced to screen‑reader users. Key dialogs lack proper ARIA roles, accessible names, and focus trapping, causing keyboard users to lose focus and make the dialogs inaccessible. The delete action button is not operable via keyboard. Labels for content‑transfer controls are ambiguous and do not group radio buttons with `role=""radiogroup""` and an associated legend. Checkboxes in the thumbnail view lack `role=""checkbox""` and `aria-checked`, and they are not individually tab‑reachable. Status icons rely solely on color, providing no textual alternative. In the Edit User pop‑up, the dialog role and accessible name are missing, the error message for required fields is not announced, and the username field lacks the native `required` attribute. These deficiencies create barriers for users with visual, motor, and cognitive impairments, contravening WCAG 2.2 success criteria.",,"The Users landing page has multiple accessibility issues, including screen‑reader‑unfriendly status updates, non‑trapped dialogs, missing keyboard focus management, and improperly marked checkboxes. The issue is currently an isolated bug report with no follow‑up discussion.","- Status update notifications (“User unsuspended”, “User suspended”, “User deleted”) are not announced by screen readers, violating **WCAG 2.1 §4.1.2** (Focus order) and **§4.1.3** (Keyboard Accessible). - The delete‑user dialog lacks **role=""dialog""** and an accessible name, missing **WCAG 2.1 §4.1.1** (Keyboard Accessible) and **§4.1.3** (Focus Management). The dialog also fails to trap keyboard focus, violating **§4.1.2**. - The delete button itself is not keyboard‑accessible, violating **§4.1.1**. - Radio buttons for content transfer lack **role=""radiogroup""** and an associated legend, violating **§4.1.1** and **§4.1.2**. - Checkboxes in the thumbnail view lack **role=""checkbox""** and **aria-checked**, and are navigated with arrow keys only, violating **§4.1.1** and **§4.1.3**. - Status icons rely solely on color and lack text alternatives, violating **§1.4.1** (Use of Color) and **§1.4.2** (Audio/Visual Alternatives). - The edit‑user popup lacks **role=""dialog""** and an accessible name, violating **§4.1.1**. - Error messages for missing required fields are not announced to screen readers and are not associated with inputs via **aria-describedby**, violating **§3.3.2** (Error Identification). - The username field in the edit popup does not use the **required** attribute, which can lead to form validation issues.",Initial report only.,# 1 reporter: Filed initial bug report. No further discussion.,"- [WCAG 2.1 Success Criterion 4.1.1 – Keyboard Accessible](https://www.w3.org/WAI/WCAG21/Understanding/keyboard-accessible.html): Ensures all functionality is operable via keyboard. - [WCAG 2.1 Success Criterion 4.1.2 – Focus Order](https://www.w3.org/WAI/WCAG21/Understanding/focus-order.html): Focus must be logical and follow a visible order. - [WCAG 2.1 Success Criterion 4.1.3 – Keyboard Accessible (All functionality)](https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html): Keyboard focus must be visible and reachable. - [WCAG 2.1 Success Criterion 1.4.1 – Use of Color](https://www.w3.org/WAI/WCAG21/Understanding/color.html): Content must not rely solely on color. - [WCAG 2.1 Success Criterion 3.3.2 – Error Identification](https://www.w3.org/WAI/WCAG21/Understanding/error-identification.html): Errors must be identified and described. - [MDN – role=""dialog"" (ARIA)](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques/Using_the_Dialog_role): Guidance on implementing accessible dialogs. - [MDN – aria-describedby](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Lexicon#aria-describedby): Associating descriptive text with form fields. - [MDN – aria-checked](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Lexicon#aria-checked): Marking checkboxes and radio buttons for accessibility."
+7416,Keyboard Focus- Accessibility,"### Below are keyboard focus issues/improvements recommendations for the Assets and the Categories section
+
+- When the page is open, the focus is landing on the search button then goes through sort by, view and then to asset/ categories folders (likely to miss the select button for trashed an all); a more logical flow would be to land on the folders and then the filters
+![focus-order](https://user-images.githubusercontent.com/47136246/104253544-a8324500-546c-11eb-894c-3b62f6d144ee.png)
+- Poor keyboard focus indication
+-   Whenever the trigger buttonin the navigation panel  is activated using the keyboard, the focus moves away from the component, need to do shift + tab to come back  (**Assets page only**)
+- Illogical focus order for the export button, after it’s activated the next Tab stop is the “By Craft Pro” instead of the “Export type” button 
+![illogical-focus](https://user-images.githubusercontent.com/47136246/104254051-e5e39d80-546d-11eb-8f8c-a5279f1a7f8b.png)
+- Copy url and copy reference tag dialogs don’t move keyboard focus into the read-only input and do not trap it  (Assets page only)
+![copy-url-focus](https://user-images.githubusercontent.com/47136246/104254285-6904f380-546e-11eb-80b6-8435cae64ddf.png)
+- Focus is not moved inside the customise dialog when activated; it’s also not trapped and doesn’t come back to the trigger; related #7297
+![asset-fields](https://user-images.githubusercontent.com/47136246/104254572-06f8be00-546f-11eb-86ef-89661df2bf61.png)
+![customise](https://user-images.githubusercontent.com/47136246/104254310-77530f80-546e-11eb-9934-87a0916b6c2d.png)
+- From a screen reader perspective, it’s possible not to realise that an action button has appeared after selecting an asset;  it feels more natural for the button to appear after the table; also, I think that it would be better if the table cells were navigable using the arrow keys and the Tab key would move out of the table-  it would improve navigation for keyboard users (just like the grid examples in aria (it should also be a grid because it has some interactive components)
+![action-button](https://user-images.githubusercontent.com/47136246/104254088-f8f66d80-546d-11eb-8350-ff3bb7276ed1.png)
+
+### Additional info
+
+- Craft version: 3.5.18
+",https://github.com/craftcms/cms/issues/7416,craftcms/cms,open,Unknown,Unknown,Unknown,2021-01-22T22:46:57Z,Unknown,2.4.3,"The Assets and Categories pages exhibit multiple keyboard accessibility barriers, including illogical tab order that bypasses critical filter controls, inadequate focus indication, focus loss when activating navigation triggers, and a lack of focus containment in modal dialogs (e.g., Copy URL, Copy Reference, Customise). Additionally, table cells are not arrow‑key navigable and an action button appears out of context, reducing predictability for keyboard and screen‑reader users. These defects impede users who rely on keyboard navigation and hinder compliance with WCAG success criteria for focus order and visibility.",,"Users report that keyboard focus lands in an illogical order, skips interactive elements, lacks clear visual indicators, and does not trap focus in modal dialogs on the Assets and Categories pages. No further discussion or fixes have been posted, so the issue remains unresolved.","The Assets and Categories interface fails to provide a logical and consistent keyboard focus order, violating WCAG 2.1 Guideline 2.4.7 (Focus Order) and 2.4.3 (Focus Visible). Focus indicators are poor, focus is lost when activating navigation panel triggers, and modal dialogs do not trap focus or move it to the first interactive element, breaching 2.4.7 and 2.4.6 (Focus Trapped). Additionally, the table is not navigable as an ARIA grid, limiting keyboard users from efficiently traversing cells, which affects WCAG 1.3.1 (Info & Relationships) and 2.4.3.",Initial report only – no subsequent comments or actions have been made.,# 1 reporter: Filed initial bug report. No further discussion.,- [WCAG 2.1 Guideline 2.4.7 – Focus Order](https://www.w3.org/TR/WCAG21/#focus-order): Focus should be logical and consistent. - [WCAG 2.1 Guideline 2.4.3 – Focus Visible](https://www.w3.org/TR/WCAG21/#focus-visible): Focus indicator must be perceivable. - [WCAG 2.1 Guideline 2.4.6 – Focus Trapped](https://www.w3.org/TR/WCAG21/#focus-trapped): Modal dialogs must trap focus. - [MDN – Managing Keyboard Focus](https://developer.mozilla.org/en-US/docs/Web/Accessibility/Keyboard-navigable_JavaScript_widgets/Managing_keyboard_focus): Best practices for focus handling. - [ARIA 1.1 – Grids](https://www.w3.org/TR/wai-aria-1.1/#grid): Guidelines for making tabular data navigable with keyboard.
+7321,Date and time fields accessibility,"### Description
+For date and time fields in the main content editor and details sidebar:
+<img width=""258"" alt=""Screenshot of date and date/time fields."" src=""https://user-images.githubusercontent.com/17884198/102929590-bbdf2280-444f-11eb-9f41-e73628abbcb4.png"">
+<img width=""129"" alt=""Screenshot of time fields."" src=""https://user-images.githubusercontent.com/17884198/102929595-be417c80-444f-11eb-9f40-0c9d9670ebce.png"">
+<img width=""342"" alt=""Screenshot of Post Date and Expiry Date date/time fields in details sidebar."" src=""https://user-images.githubusercontent.com/17884198/102929600-c0a3d680-444f-11eb-8441-694525bb7bf0.png"">
+
+- Calendar picker doesn't seem to be keyboard-accessible. 
+I think it's using jQuery UI, [this post from Deque may be helpful](https://www.deque.com/blog/accessible-jquery-ui-datepicker/). Or [Deque's demo here](https://dequeuniversity.com/library/aria/date-picker).
+Actually those examples look kind of hacky and janky... maybe we can use [the WAI-ARIA example](https://www.w3.org/TR/wai-aria-practices-1.2/examples/dialog-modal/datepicker-dialog.html) or [IBM's Vue a11y datepicker](https://ibm.github.io/vue-a11y-calendar/components/datepicker).
+- It's not clear what format or constraints apply to the date or time, especially when a user is typing directly into the input rather than using the datepicker or time dropdown. Date formatting should be validated, sometimes the date is able to be saved even though the format is wrong (https://github.com/craftcms/cms/issues/7308#issuecomment-754990576). Note: the format depends on the user's (formatting) locale settings.
+- <s>Inputs are not associated with labels. For the date-only and time-only fields, the visible label can be its label. This will also put the input into focus when the label is clicked. For the date/time fields, the date field and time field should have `aria-label` to indicate one is for date and one is for time.</s> (fixed)
+- <s>The calendar and clock icons for date/time fields in the details sidebar have insufficient contrast.</s> (fixed)
+- <s>Not sure if it's clear that the x/remove icon to the right of the time field clears both the date and time.</s> (fixed)
+- <s>The x/remove icon should be in a button element rather than an anchor.</s> (fixed)
+- <s>The x/remove icon has insufficient contrast.</s> (fixed)
+
+### Steps to reproduce
+1. Create and inspect date and time fields.
+
+### Additional info
+- Craft version: 3.5.17.1
+",https://github.com/craftcms/cms/issues/7321,craftcms/cms,open,Unknown,Unknown,Unknown,2020-12-22T20:22:54Z,Unknown,2.1.1,"Users are unable to interact with the date and time fields and the calendar picker via keyboard; the picker lacks proper ARIA roles, focus management, and keyboard navigation, preventing compliance with WCAG 2.1.1. The fields also do not communicate format constraints or validate input, leading to incorrect data entry and potential errors.","Replace the jQuery‑UI datepicker with an accessible implementation such as the WAI‑ARIA date‑picker example, IBM’s Vue‑a11y‑calendar, or a lightweight library like flatpickr configured for accessibility (ensure role=""grid"" and each day is a button with aria‑selected). Add explicit aria‑labels to the date and time inputs, use type=""date"" and type=""time"" where possible, and validate format on blur, displaying an aria‑live error message. Ensure the clear icon is a <button> with sufficient contrast and an accessible label. Patches for an accessible jQuery‑UI picker exist (e.g., https://github.com/addyosmani/jquery-ui-accessible).","The issue reports that Craft CMS date and time fields are not fully accessible – the calendar picker lacks keyboard support, labels and validation are insufficient, and some icons have low contrast. While a few accessibility fixes were applied (labeling, contrast, button semantics), the core problems with keyboard navigation and input validation remain unresolved.","- **Keyboard accessibility** – The jQuery UI calendar picker cannot be operated via keyboard, violating WCAG 2.1 1.1.1 (Non‑Text Contrast) and 2.1.1 (Keyboard Accessible). - **Labeling and role** – Date‑only and time‑only fields lack associated `<label>` elements, and date/time pairs lack contextual `aria‑label`s, breaching WCAG 2.1 1.3.1 (Info & Relationships) and 3.3.2 (Labels in Context). - **Input validation** – Users can submit incorrectly formatted dates/times (e.g., ""13/31/2023"") which is an error prevention issue (WCAG 2.1 3.3.3). - **Visual contrast** – Calendar and clock icons do not meet contrast requirements (WCAG 2.1 1.1.1). - **Remove‑icon semantics** – The clear‑field icon is an `<a>` instead of a `<button>` and its purpose is unclear, impacting keyboard and assistive‑technology understanding (WCAG 2.1 4.1.2 and 2.4.7).",Initial report only – no subsequent discussion or resolution comments are visible.,# 1 reporter: Filed initial bug report. No further discussion.,- [WCAG 2.1 Success Criterion 1.1.1 – Non‑Text Contrast](https://www.w3.org/TR/WCAG21/#non-text-contrast): Defines minimum contrast ratios for non‑text elements. - [WCAG 2.1 Success Criterion 1.3.1 – Info & Relationships](https://www.w3.org/TR/WCAG21/#info-and-relationships): Requires that information be presented in a way that assistive technologies can understand. - [WCAG 2.1 Success Criterion 1.3.4 – Labels or Instructions](https://www.w3.org/TR/WCAG21/#labels-or-instructions): Mandates that form controls have accessible labels. - [WCAG 2.1 Success Criterion 2.1.1 – Keyboard Accessible](https://www.w3.org/TR/WCAG21/#keyboard-accessible): All functionality must be operable via keyboard. - [WCAG 2.1 Success Criterion 3.3.3 – Error Suggestion](https://www.w3.org/TR/WCAG21/#error-suggestion): Error messages should provide suggestions. - [Deque Blog – Accessible jQuery UI Datepicker](https://www.deque.com/blog/accessible-jquery-ui-datepicker/): Discusses making jQuery UI datepickers accessible. - [Deque A11y Library – Datepicker Demo](https://dequeuniversity.com/library/aria/date-picker): Example implementation of an accessible datepicker. - [W3C WAI‑ARIA Datepicker Example](https://www.w3.org/TR/wai-aria-practices-1.2/examples/dialog-modal/datepicker-dialog.html): WAI‑ARIA pattern for datepickers. - [IBM Vue A11y Calendar – Datepicker](https://ibm.github.io/vue-a11y-calendar/components/datepicker): Accessible Vue datepicker component. - [Related GitHub Issue 7308 – Date Validation Bug](https://github.com/craftcms/cms/issues/7308#issuecomment-754990576): Demonstrates that incorrect date formats can still be saved.
+7308,Details sidebar accessibility,"### Description
+The details sidebar can be found on the right side of several edit views: assets, entries, categories, users. There may be more instances to identify.
+![Screenshot of details sidebar.](https://user-images.githubusercontent.com/17884198/102730417-93d5af00-42e9-11eb-943c-25bd25292def.png)
+
+#### Accessibility notes for this area:
+
+##### All
+- The editable fields don't have a border around them, so it's not clear that they are editable form fields. This is especially the case when there's only one editable field and no close/x icons nearby, such as a ""filename"" for assets:
+![Screenshot of Filename field.](https://user-images.githubusercontent.com/17884198/102730702-6dfcda00-42ea-11eb-904b-adfaecc0a255.png)
+- It would be helpful to label the top and bottom boxes. Not sure of good headings yet, but something that indicates the top section is editable and the bottom section is informative.
+- h5 elements are causing heading level errors. I think these don't necessarily need to be headings. Maybe change to definition lists.
+
+##### Assets
+- The uploaded by author link text has insufficient contrast.
+
+##### Entries
+- The author selection doesn't seem to be keyboard operable.
+- The remove button on the author field is announced before the author's name, which might be confusing.
+- The ""Notes about your changes"" text box has insufficient contrast and is using a placeholder as a label.
+- Date and author remove button hover styles are inconsistent (red on author, gray on date)
+
+**Moved date/time field related issues to #7321**
+
+##### Users
+- The gear icon menu has insufficient contrast
+- The delete functionality is inconsistent with the other editable views. It is located under a gear icon menu rather than within the save menu.
+![Screenshot of user delete option.](https://user-images.githubusercontent.com/17884198/102730800-c16f2800-42ea-11eb-96f6-8c761df46287.png)
+![Screenshot of category delete option.](https://user-images.githubusercontent.com/17884198/102730809-c9c76300-42ea-11eb-97af-a85a80cd0054.png)
+
+
+### Steps to reproduce
+1. Edit or create a new asset, entry, category, or user.
+
+### Additional info
+- Craft version: 3.5.17.1
+",https://github.com/craftcms/cms/issues/7308,craftcms/cms,open,Unknown,Unknown,Unknown,2020-12-21T01:45:58Z,Unknown,1.4.3,"The Details sidebar in Craft’s edit views presents multiple accessibility barriers, including a lack of visual cues for editable fields, insufficient color contrast on interactive elements, improper heading structure that violates hierarchical rules, keyboard navigation failures on selection widgets, and confusing ARIA announcements on delete buttons. These issues compromise perceivability, operability, and the ability to reliably identify and interact with content for users with disabilities.",,"The Craft CMS details sidebar suffers from several accessibility barriers—mis‑ordered headings, missing visual cues for editable fields, poor focus and contrast styling, and confusing author‑selection controls. The issue has been reported and a few mitigation ideas have been suggested, but no follow‑up or fix has been documented.","The sidebar violates multiple WCAG 2.2 Success Criteria: * **1.3.1 (Info & Relationships)** – `h5` elements are used without a clear hierarchical context, causing screen‑reader users to encounter non‑sequential heading order. * **1.3.2 (Meaningful Sequence)** – The “remove” button precedes the author name, confusing the reading sequence. * **1.4.1 (Use of Color)** – Links and icons (e.g., uploaded‑by author, gear menu) lack sufficient contrast with the background. * **1.4.3 (Contrast (Minimum))** – Text fields such as the “Notes about your changes” placeholder and the “Filename” field do not meet the required contrast ratio, obscuring content for low‑vision users. * **1.4.11 (Content on Hover or Focus)** – The switch and choose button provide no focus outline, violating the requirement for visible focus indicators. * **1.4.12 (Non‑Text Contrast)** – The gear‑icon menu’s delete option has low contrast against its background. These barriers hinder users with visual impairments, keyboard‑only navigation, and screen‑reader usage from effectively interacting with the sidebar.",Initial report only.,"# 1 ajanec01: Reported heading level errors and suggested replacing `<h5>` with a `<dl>`; also noted other accessibility concerns such as poor focus indication and author‑selection issues. # 2 ajanec01: Added further observations—poor focus on the choose button and switch, a side note about the author. No subsequent discussion.","- [WCAG 2.2 Success Criteria 1.3.1: Info & Relationships](https://www.w3.org/TR/WCAG22/#info-and-relationships): Requirements for using headings and landmarks correctly. - [WCAG 2.2 Success Criteria 1.4.3: Contrast (Minimum)](https://www.w3.org/TR/WCAG22/#contrast-minimum): Minimum contrast ratio guidelines for text and UI components. - [MDN Web Docs – Focus styles](https://developer.mozilla.org/en-US/docs/Web/CSS/:focus): Best practices for visible focus indication. - [WCAG 2.2 Success Criteria 1.4.11: Content on Hover or Focus](https://www.w3.org/TR/WCAG22/#content-on-hover-or-focus): Guidance on visible changes when elements receive focus. - [MDN Web Docs – <dl>, <dt>, <dd>](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl): Using definition lists for non‑heading content."

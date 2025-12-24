@@ -1,0 +1,731 @@
+Issue ID,Issue Title,Description,Issue URL,Project,Status,Priority,Component,Version,Created,wcag_sc,ai_wcag,acr_note,dev_note,thread_tldr,thread_problem,thread_sentiment,thread_timeline,thread_links
+19347,WCAG 2.5.2 (Level A) : Actions must not trigger on press or touch down,"## 📝 Provide detailed reproduction steps (if any)
+
+1. …Activate any CKEditor element that has a ""balloon"" interface.
+2. …Click anywhere outside of the balloon interface to dismiss it
+3. …The balloon interface is dismissed on key/press down, rather than mouse up or finger-lift.
+
+### ✔️ Expected result
+
+The balloon interface is dismissed on mouse up or finger-lift.
+
+### ❌ Actual result
+
+The balloon interface is dismissed on key/press down, rather than mouse up or finger-lift.
+
+### Background
+This constitutes a failure a Level A Success Criterion as documented in https://www.w3.org/WAI/WCAG22/Understanding/pointer-cancellation.html
+
+The specific failure is documented in https://www.w3.org/WAI/WCAG22/Techniques/failures/F101 :
+
+> The objective of this Failure is to describe situations where:
+> 
+>     Controls are set to activate functionality on the down-event of a pointer;
+>     No further mechanism to abort or undo is available;
+>     The up-event does not reverse the outcome of the activation;
+>     It is not essential for the functionality to execute and complete on the down-event.
+
+### Proposed resolution
+Change the behavior so that balloons are dismissed on the ""up"" event, rather than the ""down"" event.
+",https://github.com/ckeditor/ckeditor5/issues/19347,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-11-07T20:00:09Z,Unknown,2.5.2,"Users who tap or press keys to interact with the CKEditor balloon may inadvertently dismiss it at the moment of the press, causing loss of context or unsaved content and hindering task completion.","1. **Use native semantics** – Wrap the balloon in a `<dialog>` element (or `<div role=""dialog"" aria-modal=""true"">` if `<dialog>` cannot be used) and give it a `tabindex=""0""` so it can receive focus.","A user reports that a CKEditor balloon interface is dismissed on mouse/press‑down instead of mouse‑up, violating WCAG 2.2 pointer‑cancellation guidance. No further discussion or resolution comments are present in the thread.","The balloon interface is dismissed on key/press down rather than mouse up or finger lift, which triggers a failure to the WCAG 2.2 pointer‑cancellation requirement. This causes accidental activation for users who may not intend to dismiss the balloon, particularly those using assistive technologies or non‑mouse input.",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,- [WCAG 2.2 Success Criterion 2.5.2 – Pointer Cancellation](https://www.w3.org/WAI/WCAG22/Understanding/pointer-cancellation.html): Defines the requirement that actions must not trigger on press or touch down. - [WCAG 2.2 Failure F101 – Activation on Down‑Event](https://www.w3.org/WAI/WCAG22/Techniques/failures/F101): Describes failure scenarios for activation on down-event.
+19163,Link (edit mode) - Bookmarks - not accessible with screen reader,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Open https://ckeditor.com/docs/ckeditor5/latest/features/link.html
+2. Insert Link (use button or shorcut)
+3. Select ""Bookmarks"" in the balloon panel
+
+### ✔️ Expected result
+
+The screen reader should announce:
+
+- List
+- with 2 entries
+- Heritage button
+
+### ❌ Actual result
+
+The Screen reader announces:
+
+- List
+- Heritage button
+
+### ❓ Possible solution
+
+- Number of elements = 0: Display only an informational text (already implemented).
+- Number of elements = 1: Both `<ul>` and `<li>` have the attribute `role=""presentation""` → In screen readers, the button is announced without a list structure.
+- Number of elements > 1: `<ul>` and all `<li>` elements have no `role=""presentation""` attribute → In screen readers, the list is announced correctly as a list.
+
+## 📃 Other details
+
+* Browser: Edge 138.0.3351.65
+* OS: Windows 11 (10.0.22631 Build 22631)
+* Screenrader: JAWS 2024
+* First affected CKEditor version: v46.0
+* Installed CKEditor plugins: see demo page
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/19163,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-09-25T10:52:26Z,Unknown,1.3.1,"The screen reader fails to announce the single bookmark entry in the CKEditor link editor. When only one bookmark is present, the list and list item are given `role=""presentation""`, causing assistive technologies to treat them as non‑semantic elements and omit the item from the accessibility tree. Users relying on screen readers therefore cannot hear that a bookmark list exists or navigate to the bookmark.",,"The CKEditor 5 link balloon panel fails to announce the list of bookmark entries to JAWS 2024, so users only hear “List” and the “Heritage button.” No follow‑up or resolution has been recorded.","In CKEditor 5, when the Link button is used and the “Bookmarks” option is selected, a screen reader does not announce the list of bookmark items. This omission violates WCAG 2.2 Success Criterion 1.3.1 (Info and Relationships) by failing to convey the information that a list of options is available.",Initial report only,#1 reporter: Filed initial accessibility report with reproduction steps. No further discussion recorded.,
+19161,Link (edit mode) - new options - not accessible with screen reader,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Open https://ckeditor.com/docs/ckeditor5/latest/features/link.html
+2. Insert Link (use button or shorcut)
+3. Navigate to ""Bookmarks"" with ""Tab"" key
+
+### ✔️ Expected result
+
+- The options at the end of the balloon panel should consist only of interactive buttons (no other element types).
+- Navigation between these option buttons should be possible only via the Tab key (no arrow-key navigation or other unexpected focus changes).
+- When focused (first option), the screen reader should announce: ""Bookmarks button""
+
+### ❌ Actual result
+
+- The options at the end of the balloon panel are implemented as unordered list (`<ul>`).
+- Navigation between these options is currently possible using the Tab key as well as the Arrow Up and Arrow Down keys.
+- When focus is on the first option, the screen reader announces: ""List"" ""Bookmarks button""
+
+### ❓ Possible solution
+
+- Hide the list structure from assistive technologies by adding `role=""presentation""` to `<ul>` element.
+- Remove arrow key (Arrow Up / Arrow Down) navigation between the option buttons so that navigation is only possible via the Tab key.
+
+## 📃 Other details
+
+Alternative implementation suggestion — if the component is intended to behave like a navigation menu:
+
+- Number of elements = 0: Do not display the area (already implemented).
+- Number of elements = 1: Both `<ul>` and `<li>` have the attribute `role=""presentation""` → The button is announced by the screen reader without any list structure.
+- Number of elements > 1: `<ul>` and all `<li>` elements have no `role=""presentation""` attribute → The list is announced by the screen reader as an actual list.
+- Navigation to the list should be done via the Tab key.
+- Navigation within the list should be possible only via the Arrow Up / Arrow Down keys (not via Tab).
+- Pressing Arrow Right should follow the chevron and trigger the selected option.
+
+* Browser: Edge 138.0.3351.65
+* OS: Windows 11 (10.0.22631 Build 22631)
+* Screenrader: JAWS 2024
+* First affected CKEditor version: v46.0
+* Installed CKEditor plugins: see demo page
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/19161,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-09-25T10:47:29Z,Unknown,1.3.1,"Users who rely on screen readers hear the extra announcement “List” before the first option (“Bookmarks button”) because the options are wrapped in an unordered list. This unintended list announcement creates confusion and extra cognitive load, and the use of arrow‑key navigation for the options is inconsistent with the expected tab‑only interaction. The barrier impedes efficient access to the link options, limiting the user’s ability to quickly select and activate the desired option.",,"The link edit mode balloon panel in CKEditor 5 exposes a `<ul>` of options that screen readers announce as “List” and allow arrow‑key navigation, which is not expected for button‑only controls. No further discussion or resolution has been recorded.","The options at the end of the balloon panel are implemented as an unordered list (`<ul>`) that screen readers announce as “List” before the option text, and navigation between options can be performed with both Tab and arrow keys. The expected behavior is that only button elements are present, navigation should be via Tab only, and the screen reader should announce only the button label.",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,"- [CKEditor Link Feature](https://ckeditor.com/docs/ckeditor5/latest/features/link.html): Documentation for the link feature in CKEditor 5. - [WAI‑ARIA presentation role](https://www.w3.org/TR/wai-aria/#presentation): Specifies that `role=""presentation""` hides structure from assistive technologies. - [MDN Role presentation](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/Presentation_Role): Details on using role presentation to hide layout."
+19160,Bookmark icon (edit mode) - not accessible with screen reader braille,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Open https://ckeditor.com/docs/ckeditor5/latest/features/bookmarks.html
+2. Place cursor before bookmark icon
+4. Press the arrow right key
+
+### ✔️ Expected result
+
+- The screen reader braille should ouput the bookmark icon or an alternative text.
+
+### ❌ Actual result
+
+- The Screen reader braille output ""et""
+
+### ❓ Possible solution
+
+- The bookmark icon is a decorative graphic and should stay hidden as it is. 
+- Insert a text for screen readers only, e.g.
+`   <span aria-label=""Bookmark <name of bookmark>"" class=""sr-only""></span>`
+
+## 📃 Other details
+
+- The div with class=""ck-fake-selection-container"" is not linked to the bookmark, but the screen reader accounces the information.
+* Browser: Edge 138.0.3351.65
+* OS: Windows 11 (10.0.22631 Build 22631)
+* Screenrader: JAWS 2024
+* First affected CKEditor version: not shure when it started - seen in v44.3 and later
+* Installed CKEditor plugins: see demo page
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/19160,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-09-25T10:40:17Z,Unknown,4.1.2,"The bookmark icon in CKEditor 5’s edit mode is unintentionally exposed to screen readers. When navigating with the arrow keys, JAWS reads an unrelated string (“et”) instead of the intended bookmark reference or alt text, confusing users who rely on braille output.",,"The bookmark icon in CKEditor’s edit mode is announced incorrectly by JAWS 2024—screen readers output “et” instead of the intended bookmark name or an appropriate hidden state. Only the initial report exists, with no follow‑up comments or evidence of a resolution.","In CKEditor’s edit mode the bookmark icon is perceived by screen readers as the non‑text sequence “et” rather than the intended bookmark or a correctly hidden element. The icon lacks a proper accessible name or is not correctly hidden, violating WCAG 2.2 Success Criterion 1.1.1 (Non‑text Content), which requires a text alternative for non‑text content, and potentially 1.3.1 (Info & Relationships) for conveying accurate information.",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,- [CKEditor bookmarks documentation](https://ckeditor.com/docs/ckeditor5/latest/features/bookmarks.html): Reference page used in reproduction steps.
+19159,Indentations (edit mode) - not accessible with screen readers,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Open https://ckeditor.com/docs/ckeditor5/latest/features/indent.html
+2. Place cursor in the header line
+4. Press the arrow down key
+
+### ✔️ Expected result
+
+- The screen reader should announce the indentation of the text
+
+### ❌ Actual result
+
+- Screen reader output is as it is with normal text
+
+### ❓ Possible solution
+
+ - Insert a text for screen readers only, e.g.
+```
+<p style=""margin-left: 20px;"">
+   <span class=""sr-only"">Indented content start</span>
+   This is the indented text in the paragraph.
+  <span class=""sr-only"">Indented content end</span>
+</p>
+```
+
+## 📃 Other details
+
+* Browser: Edge 138.0.3351.65
+* OS: Windows 11 (10.0.22631 Build 22631)
+* Screenrader: JAWS 2024
+* First affected CKEditor version: not shure when it started - seen in v44.3 and later
+* Installed CKEditor plugins: see demo page
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/19159,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-09-25T10:32:48Z,Unknown,1.3.3,"Users who rely on screen readers cannot perceive visual indentation changes while editing content in CKEditor. Because the indentation is not announced, they are unable to discern the intended structural hierarchy or grouping of content, which hampers efficient navigation and comprehension.",,"The CKEditor 5 indentation feature in edit mode does not announce indentation levels to screen readers, creating a barrier for users who rely on audio feedback. Only the initial report has been posted; no further discussion or resolution is documented.","In the CKEditor 5 documentation demo, when a screen reader (JAWS 2024) is used, pressing the arrow key to navigate indentation does not announce the indentation of the text. Users therefore receive no auditory indication of the paragraph’s indented position, which hinders the conveyance of document structure and content relationships.",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,- [WCAG 2.2 Success Criteria](https://www.w3.org/TR/WCAG22/): Guidance on making information and relationships perceivable by all users.
+19158,Blockquote (edit mode) - not accessible with screen readers,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Open https://ckeditor.com/docs/ckeditor5/latest/features/block-quote.html
+2. Place cursor before the block quote
+4. Press the arrow down key
+
+### ✔️ Expected result
+
+- The screen reader should announce the block quote when entering the section
+
+### ❌ Actual result
+
+- Screen reader output is as it is with normal text
+
+## 📃 Other details
+
+* Browser: Edge 138.0.3351.65
+* OS: Windows 11 (10.0.22631 Build 22631)
+* Screenrader: JAWS 2024
+* First affected CKEditor version: not shure when it started - seen in v44.3 and later
+* Installed CKEditor plugins: see demo page
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/19158,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-09-25T10:29:48Z,Unknown,1.3.1,"When the caret moves into a blockquote while editing in CKEditor, JAWS 2024 does not announce the blockquote; it reads the content as ordinary text. Users lose contextual information, making it difficult to understand that the text is a quotation block, which can lead to confusion or misinterpretation of the document structure.",,"The report states that when a user navigates into a blockquote in CKEditor 5 edit mode, JAWS 2024 does not announce the blockquote and treats it as normal text. No additional discussion, testing, or resolution is recorded in the thread.","In CKEditor 5’s edit mode, the blockquote element lacks an accessible name or semantic indication when the cursor enters it, causing screen‑reader users to be unaware that they are within a blockquote. This omission violates WCAG 2.2 Success Criterion 1.1.1 (Non‑text Content) and likely Success Criterion 1.3.1 (Info and Relationships) because the content’s structural role is not communicated to assistive technologies.",Initial report only,#1 reporter: Filed initial accessibility report with reproduction steps. No further discussion recorded.,- [WCAG 2.2 Success Criterion 1.1.1: Non‑text Content](https://www.w3.org/TR/WCAG22/#non-text-content): Requires that non‑text content be assigned an accessible name or role so that assistive technologies can convey its meaning. - [WCAG 2.2 Success Criterion 1.3.1: Info and Relationships](https://www.w3.org/TR/WCAG22/#info-relationships): Requires that the structure and relationships of content be conveyed to assistive technology users.
+19157,Table (edit mode) - not accessible with screen readers,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Open https://ckeditor.com/docs/ckeditor5/latest/features/tables/tables.html
+2. Place cursor above the table
+4. Press the arrow down key (the horizontal cursor becomes visible)
+5. Press the arrow down key (the table receives focus)
+6. Press the Tab key (the first cell receives focus)
+
+### ✔️ Expected result
+
+- The screen reader user should receive clear infromation about the current position and available actions.
+
+- The screen reader should announce:
+   - ""insert a line before table <caption text>""
+   - ""Table with 4 columns and 6 rows""
+   - The caption: ""Countries that sent their citizen into space""
+   - Braille: r1c1 ""Country""
+
+The help (Alt+0) should provide a hint that tables can be entered using the""Tab"" key.
+
+### ❌ Actual result
+
+- Screen reader output is minimal or unclear:
+   - ""t""
+   - (silence, no output)
+   - Braille: r1c1 ""Country""
+
+Even when reading the help (Alt+0), the users obtains no guidance on how to enter a table. 
+
+
+## 📃 Other details
+
+* Browser: Edge 138.0.3351.65
+* OS: Windows 11 (10.0.22631 Build 22631)
+* Screenrader: JAWS 2024
+* First affected CKEditor version: not shure when it started - seen in v44.3 and later
+* Installed CKEditor plugins: see demo page
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/19157,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-09-25T10:27:09Z,Unknown,3.3.1,"Users navigating CKEditor in table‑edit mode with a screen reader (e.g., JAWS) receive no useful information when the focus moves into a table cell. The screen reader announces only the cell content, and no contextual details about the table, its caption, or available editing actions are announced. This prevents users from understanding the table structure or how to perform table edits.",,"CKEditor’s table editing mode does not provide screen‑reader users with sufficient contextual information or navigation guidance, leading to poor announcements when entering table cells. The issue was reported but no subsequent discussion or resolution is recorded.","When a screen‑reader user navigates into CKEditor’s table editing mode, the assistive technology fails to announce the table’s caption, dimensions, or available actions (e.g., “insert a line before table…”, “Table with 4 columns and 6 rows”). This omission prevents users from understanding their current position within the table and how to interact with it. The problem is consistent with WCAG 2.2 Success Criteria 1.3.1 (Meaningful Sequence) and 2.5.2 (Focus Order), which require that content be presented in a logical order and that focus changes be announced appropriately.",Initial report only,#1 reporter: Filed initial accessibility report with reproduction steps. No further discussion recorded.,- [WCAG 2.2 Success Criterion 1.3.1 – Meaningful Sequence](https://www.w3.org/TR/WCAG22/#meaningful-sequence): Provides guidance on presenting information in a logical order for assistive technology. - [WCAG 2.2 Success Criterion 2.5.2 – Focus Order](https://www.w3.org/TR/WCAG22/#focus-order): Requires that focus navigation follow the logical content sequence.
+19153,Link toolbar - aria-label unclear or missleading,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Open https://ckeditor.com/docs/ckeditor5/latest/features/link.html 
+2. Use keyboard only: Place cursor on a link
+3. Press Alt+F10
+
+### ✔️ Expected result
+
+ - Screenreader output ""Link toolbar Toolbar"" (english)
+ - Screenreader output ""Link Werkzeugleiste Symbolleiste"" (deutsch)
+
+### ❌ Actual result
+
+ - Screen reader output ""Editor toolbar Toolbar"" (english)
+ - Screenreader output ""Editor Werkzeugleiste Symbolleiste"" (deutsch) 
+
+### ❓ Possible solution
+
+ - Change localization texts from ""Editor"" to ""Link"" for the aria-label of the toolbar
+
+## 📃 Other details
+
+* Browser: Edge 138.0.3351.65
+* OS: Windows 11 (10.0.22631 Build 22631)
+* Screenrader: JAWS 2024
+* First affected CKEditor version: 46.0.0
+* Installed CKEditor plugins: see demo page 
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/19153,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-09-24T13:40:52Z,Unknown,4.1.2,"The screen reader announces the toolbar as “Editor toolbar” instead of “Link toolbar,” which misidentifies the context of the toolbar. This confusion prevents users from understanding that the toolbar is specifically for editing a link, affecting efficient navigation and task completion.",,"The issue reports that the screen reader announces “Editor toolbar” for the link toolbar instead of “Link toolbar”, causing misleading labeling. No discussion or resolution has been recorded in the thread.","The link toolbar’s aria-label is incorrectly set to “Editor toolbar”, which mislabels the toolbar for screen‑reader users. This violates WCAG 2.2 Level AA success criterion 4.1.2 – Naming, Identity, and Labeling, which requires accurate accessible names for UI components.",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,"- [CKEditor Link Toolbar Documentation](https://ckeditor.com/docs/ckeditor5/latest/features/link.html): Documentation for the link toolbar feature. - [WCAG 2.2 Success Criterion 4.1.2 – Naming, Identity, and Labeling](https://www.w3.org/TR/WCAG22/#name-and-identity): Requirement for correct accessible names."
+18898,Aria-label on editing area not updated when editor is in read-only mode,"## 📝 Provide detailed reproduction steps (if any)
+
+Using https://ckeditor.com/docs/ckeditor5/latest/features/read-only.html
+
+1. set editor read only
+2. check aria-label on `.ck-content`
+ 
+### ✔️ Expected result
+
+_What is the expected result of the above steps?_
+
+aria-label is something like `Rich Text Editor. Editing area: main. Read only.`
+
+### ❌ Actual result
+
+_What is the actual result of the above steps?_
+
+aria-label is `Rich Text Editor. Editing area: main. Press Alt+0 for help.`
+
+<img width=""1000"" height=""898"" alt=""Image"" src=""https://github.com/user-attachments/assets/ece1cf70-52ae-4970-8ed5-c7082b54b481"" />
+
+### ❓ Possible solution
+
+_If you have ideas, you can list them here. Otherwise, you can delete this section._
+
+Update label when switching read only on/off
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18898,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-07-25T09:18:54Z,Unknown,4.1.2,Assistive technology users cannot determine that the CKEditor instance is in read‑only mode because the `aria-label` on the editable area does not include the “Read only” status. This omission can lead to confusion when users attempt to interact with the editor and are unaware that input is disabled.,,"Issue reports that the aria-label for CKEditor’s editable area does not update to reflect read‑only status, remaining as “Press Alt+0 for help.” No further comments or resolution are present in the thread.","The aria-label of the CKEditor content area fails to indicate when the editor is switched to read‑only mode, violating the requirement that screen‑reader users receive accurate contextual information about the control’s state. This omission may lead to confusion for users relying on assistive technologies.",Initial report only,#1 reporter: Filed initial accessibility report with reproduction steps. No further discussion recorded.,- [CKEditor 5 Read‑Only Documentation](https://ckeditor.com/docs/ckeditor5/latest/features/read-only.html): Provides details on the read‑only mode behavior.
+18561,WCAG 2.2 A: List element `.ck-aria-live-region-list` is empty,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Load the official demo at https://ckeditor.com/ckeditor-5/demo/feature-rich/
+2. Inspect the page and look for the `.ck-body-wrapper` beneath the `<body>` element.
+3. Inside of the `.ck ck-aria-live-announcer` container are two `aria-live` sections, each containing an `ul` without any items.
+
+### ✔️ Expected result
+
+The list elements should either be dynamically inserted when there is something to announce or be marked as `aria-hidden` while they do not contain any content.
+
+### ❌ Actual result
+
+The lists exists even if there are zero list items.
+
+This is effectively in violation of [SC 1.3.1](https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html) of WCAG 2.2 level A which does not permit empty list elements, since at least one element with the (implicit) `listitem` role is required.
+
+## 📃 Other details
+
+* Browser: Chrome 136
+* OS: macOS 15.5
+* First affected CKEditor version: Unknown
+* Installed CKEditor plugins: (Full online demo)
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.",https://github.com/ckeditor/ckeditor5/issues/18561,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-05-23T12:42:48Z,Unknown,1.3.1,"The page contains an empty `<ul>` inside an `aria-live` region. An empty list violates WCAG 2.2 Success Criterion 1.3.1 because lists must contain at least one listitem to convey meaningful information. The presence of the empty list can cause confusion for users of assistive technology, potentially making the live region appear to provide content when it does not.",,An empty `<ul>` inside CKEditor’s live region violates WCAG 2.2 SC 1.3.1; only the initial report exists and no follow‑up or fix discussion has been recorded.,"The CKEditor demo’s live region contains `<ul>` elements that remain empty when there is nothing to announce, which is disallowed by WCAG 2.2 Level A success criterion SC 1.3.1 because empty list elements lack at least one `listitem` role.",Initial report only,#1 : Filed the initial accessibility report. No further discussion recorded.,- [WCAG 2.2 SC 1.3.1 – Info and Relationships](https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html): The success criterion that disallows empty list elements. - [CKEditor 5 Feature‑Rich Demo](https://ckeditor.com/ckeditor-5/demo/feature-rich/): The page used to reproduce the issue.
+18465,Bookmark is not fully accessible,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Use the bookmark tool on static text such as a heading
+2. Create a link to that bookmark tool
+
+### ✔️ Expected result
+
+The static text that is the destination of the link is missing the `tabindex=""-1""` attribute. This is necessary to ensure that all assistive technologies tracking focus can be ""moved"" to that content. 
+
+### ❌ Actual result
+
+It appears as though the `tabindex=""-1""` attribute is absent and the link only relies on fragment navigation (via `href` and `id` matching)
+
+Some assistive tech affected are:
+* Windows Screen Magnifier with Keyboard Focus tracking turned on: Viewport resets to the top-left corner.
+* iOS 18.3.2/ 17.4 VoiceOver & Safari: Focus is reset to the top of the page.
+* iOS 17.4 Full Keyboard Access turned on, external keyboard & Safari: Focus is reset to the top of the page.
+* JAWS 2023 & Chrome 124: The page structure is unexpectedly announced starting with the page title. Virtual cursor is then set on the correct content navigated.
+
+### ❓ Possible solution
+
+When we're linking to static content that doesn't already have the `tabindex` attribute, we should add it for the user.
+
+Use `tabindex=""-1""` and not `tabindex=""0""` nor `tabindex=""1""` (or any positive number) to avoid messing up sequential focus navigation orders.
+
+[Does the @tabable/accessible-links node package help?](https://www.npmjs.com/package/@tabable/accessible-links)
+
+Further reading: https://tab-able.co.uk/inaccessible-links-you-didnt-know-existed/
+
+## 📃 Other details
+
+* Browser: Chrome
+* OS: Windows
+* First affected CKEditor version: 5
+* Installed CKEditor plugins: Bookmark, Link
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18465,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-05-01T13:29:34Z,Unknown,2.4.3,"The page fails to move focus to the bookmarked target when activated, causing screen magnifiers, VoiceOver, and other assistive technologies to reset focus to the top of the page. This prevents users who rely on keyboard or focus‑based navigation from reaching the intended content.",,"The issue reports that CKEditor 5’s bookmark feature does not add a `tabindex=""-1""` attribute to target anchors, causing focus reset problems for several assistive technologies. Only three comments have been posted and no fix or update has been recorded, so the barrier remains unresolved.","The CKEditor 5 bookmark tool creates anchor elements for bookmarks that lack the required `tabindex=""-1""` attribute. When users click links to these anchors, screen readers and other assistive technologies lose the current focus context and jump to the top of the page, which violates WCAG 2.2 Success Criterion 2.4.7 (Focus Order).",Minimal engagement,"#1 Witoso: Filed the initial accessibility report with reproduction steps. #2 Comandeer: Referenced a WebKit bug fix on iOS and suggested adding `tabindex=""-1""` to anchors. #3 anevins12: Asked whether this is a bug in assistive technology, citing the HTML spec section on focusable areas.",- [Bug 179011 on WebKit](https://bugs.webkit.org/show_bug.cgi?id=179011): Reported iOS fix that may address similar behavior. - [HTML spec – Focusable areas](https://html.spec.whatwg.org/multipage/interaction.html#focus): Defines what elements are focusable. - [@tabable/accessible-links npm package](https://www.npmjs.com/package/@tabable/accessible-links): Tool that can help ensure links are accessible. - [tab‑able.co.uk – Inaccessible links you didn’t know existed](https://tab-able.co.uk/inaccessible-links-you-didnt-know-existed/): Discussion of focus-related link issues.
+18340,Duplicated labels,"## 📝 Provide a description of the improvement
+
+Some UI elements have duplicated labels:
+
+* the ""Insert via URL"" modal dialog has the same label as the URL field it contains (solution: the field could be renamed to ""Image URL"") ![Image](https://github.com/user-attachments/assets/3f0d41c4-091e-41c3-84e6-07bdf51ff4b1),
+* ""Paint formatting"" has the same label as its menu button (solution: the menu button could be renamed to ""Paint formatting options"") – the same is true also for the ""Highlight"", ""Insert code block"", ""Bulleted List"", ""Numbered List"", ""Multi-level List"", ""Track changes"".
+
+## 📃 Other details
+
+* Browser: Chrome 134.0.6998.166 
+* OS: macOS 15.4
+* CKEditor version: 44.3.0
+* Installed CKEditor plugins: N/A
+
+---
+
+If you'd like to see this improvement implemented, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18340,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-04-06T16:08:21Z,Unknown,3.3.2,"Duplicated labels cause redundant information for users of assistive technology, making it harder to understand the purpose of each control and increasing the cognitive load when navigating the interface.",,"The issue reports duplicated labels for several CKEditor UI elements, potentially confusing users of assistive technology. No further discussion or resolution has been recorded; the thread remains in its initial state.","Duplicated labels exist for the “Insert via URL” modal dialog and its URL field, as well as for several menu buttons that share the same label as their menu items. This duplication can cause confusion for users who rely on screen readers or other assistive technologies, as distinct interactive elements may be announced with identical or ambiguous names.",Initial report only,#1 pradeepelamurugu: Filed initial accessibility report. No further discussion recorded.,
+18339,Add `[aria-modal]` to modal dialogs,"## 📝 Provide a description of the improvement
+
+Modal dialogs (e.g. ""Insert the image"") do not have the [`[aria-modal]` attribute](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-modal). We could add it to indicate that these modals are, indeed, modal.
+
+Additionally we could also think about adding the [`inert` attribute](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/inert) to the, well, inert part of the page.
+
+## 📃 Other details
+
+* Browser: Chrome 134.0.6998.166
+* OS: macOs 15.4
+* CKEditor version: 44.3.0
+* Installed CKEditor plugins: N/A
+
+---
+
+If you'd like to see this improvement implemented, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18339,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-04-06T16:00:51Z,Unknown,2.4.3,"The modal dialog (e.g., the “Insert the image” dialog) does not declare `aria-modal=""true""`, nor does it isolate the rest of the page with the `inert` attribute. Consequently, assistive technology may not recognize that the dialog is modal, and keyboard focus can move to elements behind the dialog. Users who rely on screen readers or keyboard navigation can inadvertently interact with background content, leading to confusion, lost context, and potential errors.",,"The issue proposes adding `aria-modal` (and possibly `inert`) to CKEditor modal dialogs, but no further discussion or resolution has been recorded.","Modal dialogs in CKEditor 44.3.0 lack the `aria-modal` attribute, which could prevent assistive technology users from being informed that the dialog is modal and from being prevented from interacting with background content. This omission may lead to confusion and accidental background interaction.",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,- [aria-modal (MDN)](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-modal): MDN reference explaining the attribute and its role in modal dialog accessibility. - [inert (MDN)](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/inert): MDN reference explaining the inert attribute for disabling background interaction.
+18338,Updating keyboard behavior for menubar,"## 📝 Provide a description of the improvement
+
+Currently, if the menubar option is activated via the down arrow, the focus is moved to the first item in the open menu. However, if the same button is activated by the <kbd>space</kbd> key, then the focus stays at it. The [more common pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/examples/menubar-editor/) is to always move the focus to the first item in the menu, despite the method of opening it.
+
+https://github.com/user-attachments/assets/59ad442b-5eec-435b-a12b-3eb2a4611a5e
+
+## 📃 Other details
+
+* Browser: Chrome 134.0.6998.166
+* OS: macOS 15.4
+* CKEditor version: 44.3.0
+* Installed CKEditor plugins: N/A
+
+---
+
+If you'd like to see this improvement implemented, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18338,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-04-06T15:50:41Z,Unknown,2.4.3,"The focus remains on the menubar trigger when the menu is opened with the space key, whereas it moves to the first menu item when opened with the arrow key. This inconsistent focus behavior can confuse keyboard‑only users and prevent them from immediately interacting with the menu options, impairing efficient navigation.",,"The issue reports that when a CKEditor menubar is opened with the Space key, focus remains on the menubar button instead of moving to the first menu item, contrary to the recommended behavior in the W3C example. Only the initial report exists; no further discussion or resolution is recorded.","In CKEditor 44.3.0, activating a menubar via the Space key leaves keyboard focus on the menubar toggle, preventing keyboard users from immediately accessing the first menu item. This inconsistent focus behavior hinders efficient navigation for keyboard-only users and deviates from the expected menubar pattern shown in the W3C example.",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,- [W3C menubar example](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/examples/menubar-editor/): Demonstrates the expected keyboard behavior for menubar widgets.
+18337,Incorrect keyboard navigation for split buttons,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Open https://ckeditor.com/docs/ckeditor5/latest/features/bookmarks.html
+2. Focus the editor and press <kbd>Alt</kbd>+<kbd>F10</kbd> to focus the toolbar.
+3. Navigate the toolbar with the left arrow until you reach the ""Upload image from computer"" button.
+
+### ✔️ Expected result
+
+The ""Insert image"" split menu button is included in the navigation.
+
+### ❌ Actual result
+
+The button is omitted.
+
+https://github.com/user-attachments/assets/318e8c25-6ad5-4ecf-8629-91a2efcf8f9e
+
+### ❓ Possible solution
+
+Include the split menu buttons in the end-to-start keyboard navigation.
+
+## 📃 Other details
+
+* Browser: Chrome 134.0.6998.166 
+* OS: macOS 15.4
+* First affected CKEditor version: 44.3.0
+* Installed CKEditor plugins: N/A
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18337,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-04-06T15:42:25Z,Unknown,2.1.1,"Keyboard users navigating the CKEditor 5 toolbar with arrow keys cannot reach the “Insert image” split‑button because it is omitted from the focus order. This prevents keyboard‑only users from accessing or activating the image upload functionality, hindering the ability to use the editor’s toolbar.",,"A user reports that the split “Insert image” button in CKEditor’s toolbar is omitted from end‑to‑start keyboard navigation, preventing keyboard‑only users from accessing it. No follow‑up comments or fixes are present, so the issue remains unresolved.","The “Insert image” split menu button is excluded from the left‑to‑right keyboard navigation sequence in CKEditor’s toolbar, making it inaccessible to keyboard users. This violates WCAG 2.2 Success Criterion 2.1.1 (Keyboard).",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,- [WCAG 2.2 Success Criterion 2.1.1 – Keyboard](https://www.w3.org/TR/WCAG22/#keyboard): Requirement for all interface components to be operable via keyboard.
+18336,Incorrect focus behavior of bookmark and link toolbars,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Go to https://ckeditor.com/docs/ckeditor5/latest/features/bookmarks.html
+2. Select any bookmark.
+3. Click the bookmark toolbar button.
+
+### ✔️ Expected result
+
+The focus should be moved to the bookmark toolbar.
+
+### ❌ Actual result
+
+The focus stays in the same place.
+
+![Image](https://github.com/user-attachments/assets/af28ebe2-1c31-4dca-81ed-9b8888abe166)
+
+It's extremely confusing for the users of screen readers as it seems like pressing the button does nothing.
+
+The same happens with links and link toolbar (also when using the <kbd>Cmd</kbd>+<kbd>K</kbd> shortcut).
+
+### ❓ Possible solution
+
+The focus should be moved to the bookmark/link toolbar when it's shown.
+
+## 📃 Other details
+
+* Browser: Chrome 134.0.6998.166 
+* OS: macOS 15.4
+* First affected CKEditor version: 44.3.0
+* Installed CKEditor plugins: `bookmark`, `link`
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18336,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-04-06T15:36:02Z,Unknown,2.4.3,"The focus does not move to the bookmark or link toolbar after the user activates the toolbar button or shortcut. Keyboard‑only and screen‑reader users therefore remain on the element that triggered the action, making it appear as if the button has no effect and preventing them from accessing the toolbar’s controls. This lack of focus management creates a barrier to efficient navigation and interaction.",,"The issue reports that when a bookmark or link toolbar appears in CKEditor 44.3.0 and later, focus is not moved to the toolbar but remains on the button that opened it, confusing screen reader users. The thread currently contains only the initial report with no further discussion.","When the bookmark or link toolbar is displayed, the keyboard focus does not shift to the toolbar; it stays on the button that triggered the dialog. This prevents users of assistive technology from interacting with the newly visible toolbar and violates WCAG 2.2 Success Criterion 2.5.3 (Focus Order).",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,- [WCAG 2.2 Success Criterion 2.5.3: Focus Order](https://www.w3.org/TR/WCAG22/#focus-order): Ensures that focus moves logically to interactive elements. - [CKEditor Bookmark Feature](https://ckeditor.com/docs/ckeditor5/latest/features/bookmarks.html): Official documentation for the bookmark feature.
+18335,Incorrect label for the fullscreen toolbar button,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Open a sample with a fullscreen plugin.
+2. Check the label of the fullscreen menu button.
+3. Click it to enter the fullscreen mode.
+4. Check the label of the button.
+
+### ✔️ Expected result
+
+The label should stay the same.
+
+### ❌ Actual result
+
+Label changes from ""Enter fullscreeen mode"" to ""Leave fullscreen mode"".
+
+![The ""Enter fullscreen mode"" label](https://github.com/user-attachments/assets/092f5060-0ecf-4b8a-85d0-ba0c12259deb)
+![The ""Leave fullscree mode"" label](https://github.com/user-attachments/assets/c46aee3c-4c31-486e-8873-13360c8ea03f)
+
+This behavior is inconsistent with the behavior of any other toggle button (e.g. we have “Bold” with on/off state, not “Bold” and “Unbold”; also it’s “Bold”, not “Start bolding”).
+
+### ❓ Possible solution
+
+The label should be changed to ""Fullscreen mode"" – the state of the button is already expressed by its styles and `[aria-pressed]` attribute.
+
+## 📃 Other details
+
+* Browser: Chrome 134.0.6998.166 
+* OS: macOS 15.4
+* First affected CKEditor version: `master`
+* Installed CKEditor plugins: `fullscreen`
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18335,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-04-06T15:26:31Z,Unknown,4.1.2,"The fullscreen toggle button’s accessible name changes from “Enter fullscreen mode” to “Leave fullscreen mode” when activated, causing confusion for users who rely on consistent names (e.g., screen‑reader users). The dynamic label change can make it difficult to recognize that the same control is being toggled, potentially hindering efficient interaction.",1. Use a native `<button>` element for the toggle to provide built‑in accessibility support.,"The issue reports that the fullscreen toolbar button’s label toggles between “Enter fullscreen mode” and “Leave fullscreen mode,” which is inconsistent with other toggle buttons. No follow‑up discussion or resolution has been documented; the issue remains open.","The fullscreen toolbar button changes its visible label when toggled, switching from “Enter fullscreen mode” to “Leave fullscreen mode.” This label change may confuse users because the button’s state is already indicated by visual styles and the `aria-pressed` attribute, so the label does not consistently convey the control’s purpose.",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,
+18334,Update how the emoji picker is exposed to the accessibility tree,"## 📝 Provide a description of the improvement
+
+Currently, the emoji picker is marked up as `[role=grid]`. We could update it to contain information about the positions of each emoji by [wrapping buttons into `span[role=gridcell]s`](https://www.w3.org/WAI/ARIA/apg/patterns/grid/examples/layout-grids/). Alternatively, we could reuse our solution from CKEditor 4 (Special Character dialog) and use `[role=listbox]` with `[role=option][aria-posinset][aria-setsize]` children
+
+## 📃 Other details
+
+* Browser: 134.0.6998.166 
+* OS: macOS 15.4
+* CKEditor version: 44.3.0
+* Installed CKEditor plugins: `emoji`
+
+---
+
+If you'd like to see this improvement implemented, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18334,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-04-06T15:10:37Z,Unknown,4.1.3,"The emoji picker is exposed to the accessibility tree as a generic `role=""grid""` without providing positional information for its cells. This limits the ability of assistive technology users to identify or navigate individual emoji items within the grid, potentially causing confusion and making it difficult to select a specific emoji.",,"The issue proposes changing the emoji picker's ARIA markup to provide positional information for each emoji, but the thread contains only the initial report and no further discussion or resolution.","The emoji picker is currently implemented with role=""grid"" without additional positional context. This can make it difficult for users of assistive technologies to locate and select individual emojis, as the grid cells lack role=""gridcell"" wrappers or a listbox/option structure with aria-posinset/aria-setsize attributes.",Initial report only,#1 reporter: Filed initial accessibility report.,"- [ARIA grid pattern example](https://www.w3.org/WAI/ARIA/apg/patterns/grid/examples/layout-grids/): Demonstrates how to wrap elements in role=""gridcell"" to provide positional information within a grid."
+18333,Incorrect behavior of tooltips,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Go to https://ckeditor.com/docs/ckeditor5/latest/features/images/image-upload/image-upload.html
+2. Focus the editor and press <kbd>Alt</kbd>+<kbd>F10</kbd> to navigate to the toolbar
+3. Press <kbd>Esc</kbd>.
+
+### ✔️ Expected result
+
+The focus is moved back to the editor.
+
+### ❌ Actual result
+
+The first press of <kbd>Esc</kbd> hides the tooltip, the second one moves the focus. Additionally, this behavior could be even more confusing for the screen reader users as tooltips are not exposed in the accessibility tree.
+
+
+https://github.com/user-attachments/assets/c886e998-e41d-49c5-8251-b024bd9a30bc
+
+
+### ❓ Possible solution
+
+The easiest fix is to remove the current <kbd>Esc</kbd> behavior for tooltips. However, if we need such a behavior for some reason, we'll have to expose tooltips to screen readers using the [`tooltip` role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/tooltip_role).
+
+
+## 📃 Other details
+
+* Browser: Chrome 134.0.6998.166
+* OS: macOS 15.4
+* First affected CKEditor version: 44.3.0
+* Installed CKEditor plugins: N/A
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18333,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-04-06T14:56:14Z,Unknown,4.1.2,"The tooltip used in CKEditor’s toolbar is not exposed to assistive technologies because it lacks an appropriate ARIA role and accessible name. When a user navigates the toolbar with the keyboard, pressing <kbd>Esc</kbd> first hides the tooltip and only then returns focus to the editor, requiring a second keystroke. This double‑press behavior is unintuitive, breaks expected keyboard flow, and prevents screen‑reader users from hearing the tooltip content.",,"A user reported that pressing Escape once hides a CKEditor tooltip and pressing it again moves focus back to the editor, which can confuse screen‑reader users because tooltips are not exposed in the accessibility tree. No further discussion or resolution has been recorded.","The CKEditor instance hides a tooltip when Escape is pressed but does not return focus to the editor until Escape is pressed a second time. Because the tooltip is not exposed to assistive technology, the interaction is confusing for screen‑reader users. No specific WCAG Success Criteria are cited, but the issue involves focus management and accessibility tree exposure.",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,- [tooltip role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/tooltip_role): MDN documentation explaining the tooltip ARIA role. - [CKEditor image upload documentation](https://ckeditor.com/docs/ckeditor5/latest/features/images/image-upload/image-upload.html): Reproduction page referenced in the report.
+18332,"Incorrect keyboard behavior in the ""Insert image""","## 📝 Provide detailed reproduction steps (if any)
+
+1. Open https://ckeditor.com/docs/ckeditor5/latest/features/images/image-upload/image-upload.html
+2. Focus the editor.
+3. Press <kbd>Cmd</kbd>+<kbd>F10</kbd> and navigate to the ""Insert image"" menu button.
+4. Press <kbd>space</kbd> to open the menu.
+5. Try to navigate the menu with arrow keys.
+
+### ✔️ Expected result
+
+Arrow keys move the focus between menu items.
+
+### ❌ Actual result
+
+Arrow keys don't move the focus, the <kbd>Tab</kbd> key must be used instead.
+
+### ❓ Possible solution
+
+Probably the easiest fix would be to change the dropdown from a `form`-based one to one based on `div[role=menu]` one and update the keyboard navigation to match other `[role=menu]`s in the editor
+
+## 📃 Other details
+
+* Browser: Chrome 134.0.6998.166
+* OS: macOS 15.4
+* First affected CKEditor version: 44.3.0
+* Installed CKEditor plugins: `image`
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18332,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-04-06T14:42:02Z,Unknown,3.2.3,"The ""Insert image"" dropdown menu fails to support arrow‑key navigation, requiring users to use Tab instead. This prevents keyboard‑only users and those relying on assistive technologies from accessing menu items in a predictable sequence, impairing operability and user experience.",,"The issue reports that the “Insert image” dropdown in CKEditor 5 does not allow navigation with arrow keys, requiring Tab instead, creating a keyboard‑only navigation barrier. No discussion or resolution has been recorded; the issue remains unaddressed.","In CKEditor 5, the “Insert image” dropdown fails to support arrow key navigation, preventing keyboard‑only users from moving focus between menu items. This violates WCAG 2.2 Level AA success criteria for keyboard accessibility (e.g., 2.1.1 Keyboard, 3.2.1 On Focus, 3.3.2 Keyboard Accessible).",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,
+18215,Toolbar buttons in CKEditor 5 do not meet WCAG minimum size requirements (24x24px),"## 📝 Provide a description of the improvement
+
+According to [WCAG 2.5.5 Target Size (Level AA)](https://www.w3.org/WAI/WCAG21/Understanding/target-size.html), interactive elements such as buttons should have a minimum target size of 24 by 24 pixels to ensure accessibility for all users, particularly those using touch devices or with motor impairments.
+
+When using CKEditor 5 (as integrated in Drupal 10), accessibility auditing tools such as Siteimprove flag toolbar buttons — especially split buttons like Numbered List or Bulleted List — as too small.
+
+<img width=""976"" alt=""Image"" src=""https://github.com/user-attachments/assets/ca8cdf18-2f92-4fa7-be75-07ba3ba0d686"" />
+
+---
+
+If you'd like to see this improvement implemented, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18215,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-03-25T14:21:24Z,Unknown,2.5.5,"The toolbar buttons in CKEditor 5 appear too small for touch interaction, making it difficult for users with motor impairments or on touch‑enabled devices to tap them reliably. The reduced target size can lead to selection errors, frustration, and decreased usability.",,"Toolbar buttons in CKEditor 5, specifically split buttons such as Numbered List or Bulleted List, are smaller than the 24 × 24 px target size required by WCAG 2.2, and the issue has no subsequent discussion or resolution recorded.","The toolbar buttons in CKEditor 5 fail to meet WCAG 2.2 Success Criterion 2.5.5 Target Size, which requires interactive elements to have a minimum target size of 24 × 24 px for users with touch or motor impairments.",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,- [WCAG 2.2 Success Criterion 2.5.5 Target Size](https://www.w3.org/WAI/WCAG21/Understanding/target-size.html): The target size requirement that the toolbar buttons fail to meet.
+18013,Going back from the 2nd level of Link toolbar tree via keyboard does not restore focus to original toolbar,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Open a manual test with links (e.g. `linkdecorator.html`)
+2. Focus a link and open its toolbar via keyboard (`Opt+F10`)
+3. Navigate to 2nd level toolbar (e.g. decorators)
+4. Go back to 1st level toolbar via Back arrow button or Esc
+
+### ✔️ Expected result
+
+1st level toolbar is focused as if it was opened via `Opt+F10` shortcut.
+
+### ❌ Actual result
+
+The toolbar is not focused. Focus is brought back to the editor and 1st level toolbar is opened.
+
+https://github.com/user-attachments/assets/720e7a11-aee5-492f-9a07-5c017070b6cb
+
+## 📃 Other details
+
+* Browser: n/a
+* OS: n/a
+* First affected CKEditor version: current `master` branch
+* Installed CKEditor plugins: Link
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/18013,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-02-27T15:53:30Z,Unknown,2.4.2,"The focus is lost when a user navigates back from a nested toolbar level. After pressing the Back arrow or Esc, keyboard focus returns to the editor instead of the first‑level toolbar, breaking the user’s navigation flow and causing confusion for keyboard‑only users.",,"The issue reports that pressing the keyboard back navigation in the CKEditor Link toolbar does not restore focus to the first‑level toolbar, instead returning focus to the editor. No subsequent discussion or resolution steps are recorded.","When a user navigates into the second level of the Link toolbar and then returns to the first level using the back arrow or Esc, the focus is incorrectly moved back to the editor rather than to the first‑level toolbar. This misfocus can disrupt keyboard‑only navigation and violate WCAG 2.2 success criteria requiring that keyboard focus be managed predictably (e.g., 2.4.3 Focus Order).",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,
+17945,Keyboard support for dragging special characters dialog,"## 📝 Provide detailed reproduction steps (if any)
+
+There is no accessibility documentation to move the special characters dialog with the keyboard
+
+1. open accessibility help (alt+0)
+2. observe no directions to move or drag the dialog with only the keyboard
+
+### ✔️ Expected result
+
+As a keyboard user I would expect some kind of focus or keyboard indication that a non-modal window like special characters can be moved so rich text content is not obscured by the dialog.
+
+### ❌ Actual result
+
+There is no documented keystroke to move this dialog with the keyboard. Sighted keyboard-only users must close the special characters dialog if it obscures text while opened.
+
+### ❓ Possible solution
+
+At a minimum navigate to the parent container (that contains the ARIA role=dialog) and move the dialog container with the keyboard
+
+## 📃 Other details
+tested with CKEditor5 v44.2.0
+Browser: Chrome and Safari
+OS: Windows 10 and MacOS v13
+First affected CKEditor version: the version that changed the special characters from a dropdown component to a non-modal dialog
+
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/17945,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2025-02-17T18:08:40Z,Unknown,2.1.1,"The special‑characters panel is presented as a non‑modal dialog that can cover editable content. Keyboard users cannot reposition or dismiss it, forcing them to close the dialog to continue working. This prevents access to content behind the dialog and violates the expectation that all interactive controls be operable via keyboard.",,Keyboard users cannot move the special characters dialog with the keyboard because no documented keystroke or focus indicator is provided. The issue remains unaddressed with no subsequent discussion.,"The special characters dialog is a non‑modal window that can obscure content. Keyboard‑only users have no documented way to move or dismiss it, forcing them to close the dialog in order to access the underlying text.",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,
+17438,Renumber heading levels in Paste from Office,"## 📝 Provide a description of the improvement
+
+The [Paste from Office feature](https://ckeditor.com/docs/ckeditor5/latest/features/pasting/paste-from-office.html) retains heading levels where configuration allows. However, accessibility guidelines mean the [default heading levels](https://ckeditor.com/docs/ckeditor5/latest/features/headings.html#heading-levels) start at `<h2>`. If such a config is applied pasting a Word or Google doc will be converted to a paragraph instead.
+
+Ideally the heading levels should be shifted down a level on paste if `<h1>` is not in use.
+
+Such a request was also suggested in [this comment on #2443](https://github.com/ckeditor/ckeditor5/issues/2443#issuecomment-321299883).
+
+## 📃 Other details
+Related issues:
+
+- #2443
+- #2455
+- #2479
+- #10577
+
+
+---
+
+If you'd like to see this improvement implemented, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/17438,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2024-11-09T06:38:37Z,Unknown,1.3.1,"The pasting behavior removes heading markup when the editor’s configured heading levels begin at `<h2>`. As a result, content that originally used headings in source documents is rendered as plain paragraphs, breaking the document’s logical structure and making it harder for users of assistive technologies to navigate or understand the content hierarchy.",,"The issue reports that CKEditor 5’s Paste from Office feature preserves heading levels, but the editor’s default heading hierarchy starts at `<h2>`. Consequently, pasted content from Word or Google Docs that contains `<h1>` headings is converted to paragraphs, breaking semantic structure. No discussion or resolution has been recorded.","When the Paste from Office feature retains heading levels that are not part of the editor’s default heading hierarchy (which starts at `<h2>`), `<h1>` headings from source documents are downgraded to paragraphs. This removal of proper heading structure prevents assistive technology users from correctly navigating document sections, violating WCAG 2.2 Success Criteria 2.4.1 (Headings and Labels) and 2.4.6 (Headings and Labels).",Initial report only,#1 reporter: Filed initial accessibility report. No further discussion recorded.,- [Paste from Office feature](https://ckeditor.com/docs/ckeditor5/latest/features/pasting/paste-from-office.html): Description of the feature that preserves heading levels. - [Heading levels](https://ckeditor.com/docs/ckeditor5/latest/features/headings.html#heading-levels): Explanation of CKEditor 5’s default heading hierarchy. - [Comment on #2443](https://github.com/ckeditor/ckeditor5/issues/2443#issuecomment-321299883): Suggestion for shifting heading levels on paste.
+17200,Toolbar/Menubar focus keyboard shortcuts are shifting focus when a fullscreen modal/dialog is opened,"## 📝 Provide detailed reproduction steps (if any)
+
+1. Open Feature-rich demo (https://ckeditor.com/ckeditor-5/demo/feature-rich/)
+2. Launch a dialog/modal with dark background (no interaction with editor), for example Media Embed
+3. Use `Alt+F9` or `Alt+F10` shortcuts to focus menubar/toolbar
+
+### ✔️ Expected result
+
+- menubar/toolbar is not focused, keyboard shortcut does not do anything
+OR
+- dialog is closed, menubar/toolbar is focused as usual
+
+### ❌ Actual result
+
+- menubar/toolbar is focused, dialog is still opened, there is no way to return focus to the dialog
+
+## 📃 Other details
+
+* Browser: Chrome
+* OS: macOS
+* First affected CKEditor version: found in 43.1.0
+* Installed CKEditor plugins: n/a
+
+---
+
+If you'd like to see this fixed sooner, add a 👍 reaction to this post.
+",https://github.com/ckeditor/ckeditor5/issues/17200,ckeditor/ckeditor5,open,Unknown,Unknown,Unknown,2024-10-02T08:48:22Z,Unknown,3.3.3,"The keyboard shortcuts that normally focus the menubar or toolbar (Alt + F9/Alt + F10) unexpectedly move focus to those elements while a fullscreen modal/dialog is open. This breaks the modal’s focus trap, leaving users unable to return focus to the dialog and causing confusion for keyboard‑only and screen‑reader users.",,"A CKEditor 5 feature‑rich demo user reports that pressing `Alt+F9` or `Alt+F10` while a fullscreen modal (e.g., Media Embed) is open moves focus to the toolbar, leaving the modal open and trapping keyboard focus. No resolution or follow‑up discussion has been recorded.","When a fullscreen modal or dialog is displayed, the keyboard shortcuts `Alt+F9` and `Alt+F10` intended to focus the menubar or toolbar cause the focus to leave the modal. This focus shift occurs while the modal remains open, preventing the user from returning focus to the modal or closing it via keyboard. The behavior conflicts with WCAG 2.2 Level AA success criteria that require (1) all interactive functionality to be operable via keyboard (2.1.1) and (2) focus to be managed in a predictable order (2.4.3).",Initial report only,#1 reporter: Filed initial accessibility report.,
