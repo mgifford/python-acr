@@ -117,6 +117,21 @@ Process only the first N issues (useful for testing):
 python run_acr.py --repo drupal --ai-backend ollama --model gemma2:2b --limit 10
 ```
 
+### Joomla CMS Example ✅
+Show the script working against a large GitHub project by running the full pipeline for the Joomla repository. The steps below assume you have `python3` available, are inside the repo root, and have already created and activated the virtual environment described in the **Installing** section so that `pandas`, `python-dotenv`, and the other dependencies are available.
+
+```bash
+# once (if not already done)
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# run the Joomla scan
+python run_acr.py --repo https://github.com/joomla/joomla-cms/
+```
+
+Results land in `results/joomla-joomla-cms-default-<date>`; keep that folder (or the generated `.zip`) around if you want to move it into `results/` for the comparator later.
+
 ### Custom Tag Scanning (Performance, Sustainability, etc.) 🏷️
 You can override the default accessibility tags to scan for any topic:
 ```bash
