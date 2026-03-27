@@ -13,9 +13,100 @@
             --card: #ffffff;
             --border: #d5dde7;
             --text: #0f172a;
+            --text-muted: #64748b;
+            --text-subtle: #94a3b8;
+            --bg-secondary: #f8fafc;
+            --bg-input: #ffffff;
+            --border-input: #cbd5e1;
+            --color-focus: #ffbe0b;
             --section-default: #94a3b8;
+            --btn-nav-bg: #dbe3ed;
+            --btn-nav-hover: #c1ccda;
+            --vote-footer-bg: #f8fafc;
+            --vote-btn-bg: #ffffff;
+            --vote-btn-hover: #e2e8f0;
             --font-heading: "Helvetica Neue", Helvetica, Arial, sans-serif;
             --font-body: "Times New Roman", Times, serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #4a9cd6;
+                --primary-dark: #2d6a9e;
+                --bg-top: #0f172a;
+                --bg-bottom: #1a2540;
+                --card: #1e293b;
+                --border: #334155;
+                --text: #e2e8f0;
+                --text-muted: #94a3b8;
+                --text-subtle: #64748b;
+                --bg-secondary: #1e293b;
+                --bg-input: #1e293b;
+                --border-input: #475569;
+                --color-focus: #ffbe0b;
+                --btn-nav-bg: #334155;
+                --btn-nav-hover: #475569;
+                --vote-footer-bg: #1e293b;
+                --vote-btn-bg: #334155;
+                --vote-btn-hover: #475569;
+            }
+        }
+
+        [data-theme="dark"] {
+            --primary: #4a9cd6;
+            --primary-dark: #2d6a9e;
+            --bg-top: #0f172a;
+            --bg-bottom: #1a2540;
+            --card: #1e293b;
+            --border: #334155;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-subtle: #64748b;
+            --bg-secondary: #1e293b;
+            --bg-input: #1e293b;
+            --border-input: #475569;
+            --color-focus: #ffbe0b;
+            --btn-nav-bg: #334155;
+            --btn-nav-hover: #475569;
+            --vote-footer-bg: #1e293b;
+            --vote-btn-bg: #334155;
+            --vote-btn-hover: #475569;
+        }
+
+        [data-theme="light"] {
+            --primary: #0f4c81;
+            --primary-dark: #0a3559;
+            --bg-top: #f5f7fb;
+            --bg-bottom: #edf2fb;
+            --card: #ffffff;
+            --border: #d5dde7;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --text-subtle: #94a3b8;
+            --bg-secondary: #f8fafc;
+            --bg-input: #ffffff;
+            --border-input: #cbd5e1;
+            --color-focus: #ffbe0b;
+            --btn-nav-bg: #dbe3ed;
+            --btn-nav-hover: #c1ccda;
+            --vote-footer-bg: #f8fafc;
+            --vote-btn-bg: #ffffff;
+            --vote-btn-hover: #e2e8f0;
+        }
+
+        * {
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        @media (forced-colors: active) {
+            .panel {
+                border: 1px solid CanvasText;
+            }
+            #theme-toggle {
+                border: 1px solid ButtonText;
+                color: ButtonText;
+                background-color: ButtonFace;
+            }
         }
 
         body {
@@ -105,7 +196,7 @@
 
         .context-panel {
             flex: 0 0 22%;
-            background: #f8fafc;
+            background: var(--bg-secondary);
             border-left: 6px solid var(--primary);
         }
 
@@ -168,42 +259,43 @@
             transition: transform 0.2s ease, background 0.2s ease;
         }
 
-        .btn-nav { background: #dbe3ed; color: var(--text); }
-        .btn-nav:hover { background: #c1ccda; }
+        .btn-nav { background: var(--btn-nav-bg); color: var(--text); }
+        .btn-nav:hover { background: var(--btn-nav-hover); }
         .btn-save { background: var(--primary); color: #fff; }
         .btn-save:hover { background: var(--primary-dark); }
-        .btn:focus-visible { outline: 3px solid #ffbe0b; outline-offset: 3px; }
+        .btn:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
         .btn:active { transform: scale(0.98); }
 
         .vote-footer {
             padding: 12px;
             border-top: 1px solid var(--border);
             text-align: center;
-            background: #f8fafc;
+            background: var(--vote-footer-bg);
         }
 
         .vote-btn {
             width: 100%;
             padding: 9px;
-            border: 1px solid #cbd5e1;
-            background: white;
+            border: 1px solid var(--border-input);
+            background: var(--vote-btn-bg);
+            color: var(--text);
             border-radius: 10px;
             cursor: pointer;
             font-weight: 600;
             transition: background 0.2s ease, color 0.2s ease;
         }
 
-        .vote-btn:hover { background: #e2e8f0; }
+        .vote-btn:hover { background: var(--vote-btn-hover); }
         .vote-btn.selected { background: #2563eb; color: #fff; border-color: #1e4ed8; }
 
         .context-content { display: flex; flex-direction: column; gap: 16px; }
         .context-section { display: flex; flex-direction: column; gap: 6px; }
-        .context-title { font-size: 1.05em; font-weight: 600; color: #0f172a; }
+        .context-title { font-size: 1.05em; font-weight: 600; color: var(--text); }
         .context-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
-        .meta-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 2px; }
-        .meta-value { font-weight: 600; color: #0f172a; }
-        .section-label { font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 4px; }
-        .section-body { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 12px; min-height: 48px; }
+        .meta-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-subtle); margin-bottom: 2px; }
+        .meta-value { font-weight: 600; color: var(--text); }
+        .section-label { font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-subtle); margin-bottom: 4px; }
+        .section-body { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 12px; min-height: 48px; }
 
         .model-section {
             margin-bottom: 18px;
@@ -255,10 +347,46 @@
             color: #9a3412;
         }
 
-        .context-footer { padding: 15px; border-top: 1px solid #ddd; font-size: 0.85em; background: #fff; }
+        .context-footer { padding: 15px; border-top: 1px solid var(--border); font-size: 0.85em; background: var(--card); }
 
         .rich-text p { margin: 0 0 6px 0; }
         .rich-text ul { margin: 0 0 6px 24px; }
+
+        /* --- Theme Toggle --- */
+        #theme-toggle {
+            padding: 6px 8px;
+            border: 1px solid var(--border);
+            background-color: var(--card);
+            color: var(--text);
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #theme-toggle:hover { background-color: var(--btn-nav-hover); }
+
+        #theme-toggle:focus-visible {
+            outline: 3px solid var(--color-focus);
+            outline-offset: 3px;
+        }
+
+        .theme-icon { display: block; width: 18px; height: 18px; }
+
+        /* Default (light): show moon */
+        .sun-icon { display: none; }
+        .moon-icon { display: block; }
+
+        @media (prefers-color-scheme: dark) {
+            .sun-icon { display: block; }
+            .moon-icon { display: none; }
+        }
+
+        [data-theme="dark"] .sun-icon { display: block; }
+        [data-theme="dark"] .moon-icon { display: none; }
+        [data-theme="light"] .sun-icon { display: none; }
+        [data-theme="light"] .moon-icon { display: block; }
 
         @media (prefers-reduced-motion: reduce) {
             * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
@@ -272,10 +400,20 @@
             <h2 style="margin:0; font-size:1.2em;">⚖️ Multi-Model Comparator</h2>
             <span id="progress" style="background:#e2e8f0; padding:4px 8px; border-radius:4px; font-size:0.85em;">Loading...</span>
         </div>
-        <div style="display:flex; gap:10px;">
+        <div style="display:flex; gap:10px; align-items:center;">
             <button class="btn btn-nav" onclick="nav(-1)">Previous</button>
             <button class="btn btn-nav" onclick="nav(1)">Next</button>
             <button class="btn btn-save" onclick="downloadCSV()">💾 Download Results</button>
+            <!-- Theme toggle comes after navigation items for correct tab order -->
+            <button id="theme-toggle" aria-label="Switch to dark mode">
+                <svg aria-hidden="true" class="theme-icon sun-icon" viewBox="0 0 24 24" width="18" height="18">
+                    <circle cx="12" cy="12" r="5" fill="currentColor"/>
+                    <path fill="currentColor" d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+                </svg>
+                <svg aria-hidden="true" class="theme-icon moon-icon" viewBox="0 0 24 24" width="18" height="18">
+                    <path fill="currentColor" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                </svg>
+            </button>
         </div>
     </div>
 
@@ -1142,6 +1280,39 @@
             document.body.appendChild(a);
             a.click();
         }
+    </script>
+
+    <script>
+        /* ── Theme toggle ── */
+        (function () {
+            const toggle = document.getElementById('theme-toggle');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+            const saved = localStorage.getItem('theme');
+            let current = saved || (prefersDark.matches ? 'dark' : 'light');
+            let userOverride = !!saved;
+
+            function applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                toggle.setAttribute('aria-label',
+                    theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+            }
+
+            toggle.addEventListener('click', function () {
+                current = current === 'light' ? 'dark' : 'light';
+                userOverride = true;
+                localStorage.setItem('theme', current);
+                applyTheme(current);
+            });
+
+            prefersDark.addEventListener('change', function (e) {
+                if (!userOverride) {
+                    current = e.matches ? 'dark' : 'light';
+                    applyTheme(current);
+                }
+            });
+
+            applyTheme(current);
+        }());
     </script>
 </body>
 </html>
