@@ -29,3 +29,101 @@
   --accent-thread-journey: #0f766e;
   --accent-thread-journey-bg: #ecfdf5;
 }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent-wcag-mapping: #60a5fa;
+    --accent-wcag-mapping-bg: #1e3a5f;
+
+    --accent-acr-note: #38bdf8;
+    --accent-acr-note-bg: #0c2a3e;
+
+    --accent-developer-note: #4ade80;
+    --accent-developer-note-bg: #052e16;
+
+    --accent-thread-tldr: #c084fc;
+    --accent-thread-tldr-bg: #3b0764;
+
+    --accent-thread-problem: #f87171;
+    --accent-thread-problem-bg: #450a0a;
+
+    --accent-thread-sentiment: #38bdf8;
+    --accent-thread-sentiment-bg: #082f49;
+
+    --accent-thread-timeline: #fcd34d;
+    --accent-thread-timeline-bg: #451a03;
+
+    --accent-thread-links: #93c5fd;
+    --accent-thread-links-bg: #1e3a5f;
+
+    --accent-thread-todo: #f472b6;
+    --accent-thread-todo-bg: #500724;
+
+    --accent-thread-journey: #2dd4bf;
+    --accent-thread-journey-bg: #042f2e;
+  }
+}
+
+[data-theme="dark"] {
+  --accent-wcag-mapping: #60a5fa;
+  --accent-wcag-mapping-bg: #1e3a5f;
+
+  --accent-acr-note: #38bdf8;
+  --accent-acr-note-bg: #0c2a3e;
+
+  --accent-developer-note: #4ade80;
+  --accent-developer-note-bg: #052e16;
+
+  --accent-thread-tldr: #c084fc;
+  --accent-thread-tldr-bg: #3b0764;
+
+  --accent-thread-problem: #f87171;
+  --accent-thread-problem-bg: #450a0a;
+
+  --accent-thread-sentiment: #38bdf8;
+  --accent-thread-sentiment-bg: #082f49;
+
+  --accent-thread-timeline: #fcd34d;
+  --accent-thread-timeline-bg: #451a03;
+
+  --accent-thread-links: #93c5fd;
+  --accent-thread-links-bg: #1e3a5f;
+
+  --accent-thread-todo: #f472b6;
+  --accent-thread-todo-bg: #500724;
+
+  --accent-thread-journey: #2dd4bf;
+  --accent-thread-journey-bg: #042f2e;
+}
+
+[data-theme="light"] {
+  --accent-wcag-mapping: #2563eb;
+  --accent-wcag-mapping-bg: #e0ecff;
+
+  --accent-acr-note: #0284c7;
+  --accent-acr-note-bg: #f0f9ff;
+
+  --accent-developer-note: #16a34a;
+  --accent-developer-note-bg: #f0fdf4;
+
+  --accent-thread-tldr: #a855f7;
+  --accent-thread-tldr-bg: #f3e8ff;
+
+  --accent-thread-problem: #ef4444;
+  --accent-thread-problem-bg: #fee2e2;
+
+  --accent-thread-sentiment: #0ea5e9;
+  --accent-thread-sentiment-bg: #e0f2fe;
+
+  --accent-thread-timeline: #f59e0b;
+  --accent-thread-timeline-bg: #fef3c7;
+
+  --accent-thread-links: #3b82f6;
+  --accent-thread-links-bg: #dbeafe;
+
+  --accent-thread-todo: #ec4899;
+  --accent-thread-todo-bg: #fce7f3;
+
+  --accent-thread-journey: #0f766e;
+  --accent-thread-journey-bg: #ecfdf5;
+}

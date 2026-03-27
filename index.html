@@ -10,8 +10,92 @@
             --bg-color: #f8fafc;
             --card-bg: #ffffff;
             --border-color: #e2e8f0;
+            --text-color: #334155;
+            --text-heading: #1e293b;
+            --text-muted: #475569;
+            --text-subtle: #94a3b8;
+            --bg-secondary: #f1f5f9;
+            --bg-tertiary: #f8fafc;
+            --bg-input: #ffffff;
+            --border-input: #cbd5e1;
+            --color-focus: #004499;
+            --color-hover-nav: #cbd5e1;
             --font-heading: "Helvetica Neue", Helvetica, Arial, sans-serif;
             --font-body: "Times New Roman", Times, serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-color: #60a5fa;
+                --bg-color: #0f172a;
+                --card-bg: #1e293b;
+                --border-color: #334155;
+                --text-color: #cbd5e1;
+                --text-heading: #e2e8f0;
+                --text-muted: #94a3b8;
+                --text-subtle: #64748b;
+                --bg-secondary: #1a2540;
+                --bg-tertiary: #1e293b;
+                --bg-input: #1e293b;
+                --border-input: #475569;
+                --color-focus: #93c5fd;
+                --color-hover-nav: #475569;
+            }
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #60a5fa;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --text-color: #cbd5e1;
+            --text-heading: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-subtle: #64748b;
+            --bg-secondary: #1a2540;
+            --bg-tertiary: #1e293b;
+            --bg-input: #1e293b;
+            --border-input: #475569;
+            --color-focus: #93c5fd;
+            --color-hover-nav: #475569;
+        }
+
+        [data-theme="light"] {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-color: #334155;
+            --text-heading: #1e293b;
+            --text-muted: #475569;
+            --text-subtle: #94a3b8;
+            --bg-secondary: #f1f5f9;
+            --bg-tertiary: #f8fafc;
+            --bg-input: #ffffff;
+            --border-input: #cbd5e1;
+            --color-focus: #004499;
+            --color-hover-nav: #cbd5e1;
+        }
+
+        * {
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                transition: none !important;
+            }
+        }
+
+        @media (forced-colors: active) {
+            .card {
+                border: 1px solid CanvasText;
+            }
+            #theme-toggle {
+                border: 1px solid ButtonText;
+                color: ButtonText;
+                background-color: ButtonFace;
+            }
         }
 
         body {
@@ -19,7 +103,7 @@
             margin: 0;
             padding: 0;
             background-color: var(--bg-color);
-            color: #334155;
+            color: var(--text-color);
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -41,7 +125,7 @@
             z-index: 10;
         }
 
-        h1 { margin: 0; font-size: 1.2rem; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        h1 { margin: 0; font-size: 1.2rem; color: var(--text-heading); display: flex; align-items: center; gap: 10px; }
         
         .controls {
             display: flex;
@@ -72,7 +156,7 @@
 
         .taxonomy-filter label {
             font-size: 0.75rem;
-            color: #475569;
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
@@ -80,23 +164,27 @@
         .taxonomy-filter select {
             margin-top: 4px;
             padding: 8px 10px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--border-input);
             border-radius: 6px;
             font-family: var(--font-body);
+            background-color: var(--bg-input);
+            color: var(--text-color);
         }
 
         .taxonomy-status {
             font-size: 0.8rem;
-            color: #475569;
+            color: var(--text-muted);
         }
 
         select.issue-selector {
             padding: 8px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--border-input);
             border-radius: 6px;
             min-width: 150px;
             max-width: 400px;
             flex-shrink: 1;
+            background-color: var(--bg-input);
+            color: var(--text-color);
         }
 
         .nav-button, .save-button {
@@ -109,9 +197,10 @@
             font-size: 0.9rem;
         }
 
-        .nav-button { background-color: #e2e8f0; color: #475569; }
-        .nav-button:hover:not(:disabled) { background-color: #cbd5e1; }
+        .nav-button { background-color: var(--color-hover-nav); color: var(--text-muted); }
+        .nav-button:hover:not(:disabled) { background-color: var(--border-input); }
         .nav-button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .nav-button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 
         .save-button { background-color: #16a34a; color: white; }
         .save-button:hover { background-color: #15803d; }
@@ -122,7 +211,7 @@
             flex: 1;
             overflow: hidden;
             justify-content: center; /* Center the content */
-            background-color: #f1f5f9;
+            background-color: var(--bg-secondary);
         }
 
         /* Resizable Panel Layout */
@@ -153,7 +242,7 @@
             min-width: 350px;
             padding: 25px;
             overflow-y: auto;
-            background: #fafbfc;
+            background: var(--bg-tertiary);
             border-left: 1px solid var(--border-color);
         }
 
@@ -296,8 +385,8 @@
         .card h2 {
             margin-top: 0;
             font-size: 1rem;
-            color: #475569;
-            border-bottom: 1px solid #f1f5f9;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
             padding-bottom: 10px;
             margin-bottom: 15px;
             text-transform: uppercase;
@@ -314,7 +403,7 @@
         .info-item label {
             display: block;
             font-size: 0.75rem;
-            color: #94a3b8;
+            color: var(--text-subtle);
             font-weight: bold;
             margin-bottom: 4px;
             text-transform: uppercase;
@@ -322,10 +411,10 @@
         .info-item div { font-size: 0.9rem; font-weight: 500; }
 
         .content-block {
-            background: #f8fafc;
+            background: var(--bg-tertiary);
             padding: 15px;
             border-radius: 6px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--border-color);
             font-family: var(--font-body);
             line-height: 1.6;
             white-space: pre-wrap;
@@ -339,12 +428,12 @@
         }
 
         .taxonomy-chip {
-            background: #e2e8f0;
+            background: var(--border-color);
             border-radius: 999px;
             padding: 2px 10px;
             font-size: 0.75rem;
             font-family: var(--font-heading);
-            color: #334155;
+            color: var(--text-color);
         }
 
         .taxonomy-chip.empty {
@@ -358,15 +447,17 @@
         }
 
         .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 6px; color: #4b5563; }
+        .input-group label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 6px; color: var(--text-muted); }
         
         select, input[type="number"], textarea {
             width: 100%;
             padding: 10px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--border-input);
             border-radius: 6px;
             box-sizing: border-box;
             font-family: inherit;
+            background-color: var(--bg-input);
+            color: var(--text-color);
         }
         
         textarea { resize: vertical; min-height: 150px; }
@@ -429,12 +520,56 @@
         /* Updated Header for Info Items */
         .info-item h3 {
             font-size: 0.85rem;
-            color: #64748b;
+            color: var(--text-muted);
             font-weight: bold;
             margin: 0 0 8px 0;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+
+        /* --- Theme Toggle --- */
+        #theme-toggle {
+            margin-left: 12px;
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        #theme-toggle:hover {
+            background-color: var(--color-hover-nav);
+        }
+
+        #theme-toggle:focus-visible {
+            outline: 2px solid var(--color-focus);
+            outline-offset: 2px;
+        }
+
+        .theme-icon {
+            display: block;
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Default (light): show moon (switching to dark) */
+        .sun-icon { display: none; }
+        .moon-icon { display: block; }
+
+        @media (prefers-color-scheme: dark) {
+            .sun-icon { display: block; }
+            .moon-icon { display: none; }
+        }
+
+        [data-theme="dark"] .sun-icon { display: block; }
+        [data-theme="dark"] .moon-icon { display: none; }
+        [data-theme="light"] .sun-icon { display: none; }
+        [data-theme="light"] .moon-icon { display: block; }
 
     </style>
 </head>
@@ -472,6 +607,17 @@
             </select>
 
             <button id="nextButton" class="nav-button" onclick="handleNext()">Next</button>
+
+            <!-- Theme toggle comes after navigation items for correct tab order -->
+            <button id="theme-toggle" aria-label="Switch to dark mode">
+                <svg aria-hidden="true" class="theme-icon sun-icon" viewBox="0 0 24 24" width="18" height="18">
+                    <circle cx="12" cy="12" r="5" fill="currentColor"/>
+                    <path fill="currentColor" d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+                </svg>
+                <svg aria-hidden="true" class="theme-icon moon-icon" viewBox="0 0 24 24" width="18" height="18">
+                    <path fill="currentColor" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                </svg>
+            </button>
         </div>
     </header>
 
@@ -2009,6 +2155,39 @@
                 }, {});
             });
         }
+    </script>
+
+    <script>
+        /* ── Theme toggle ── */
+        (function () {
+            const toggle = document.getElementById('theme-toggle');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+            const saved = localStorage.getItem('theme');
+            let current = saved || (prefersDark.matches ? 'dark' : 'light');
+            let userOverride = !!saved;
+
+            function applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                toggle.setAttribute('aria-label',
+                    theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+            }
+
+            toggle.addEventListener('click', function () {
+                current = current === 'light' ? 'dark' : 'light';
+                userOverride = true;
+                localStorage.setItem('theme', current);
+                applyTheme(current);
+            });
+
+            prefersDark.addEventListener('change', function (e) {
+                if (!userOverride) {
+                    current = e.matches ? 'dark' : 'light';
+                    applyTheme(current);
+                }
+            });
+
+            applyTheme(current);
+        }());
     </script>
 </body>
 </html>
