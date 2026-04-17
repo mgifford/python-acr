@@ -47,14 +47,22 @@ Your goal is to:
 - Provide developers with clear, minimal, and current technical direction
 - Avoid speculative or non-actionable advice
 
-Provide exactly four outputs:
+Provide exactly six outputs:
 
-1. ACR_NOTE  
+1. PROBLEM_SENTENCE
+A single sentence (under 200 characters) that concisely describes the core
+accessibility problem reported in this issue. Focus on the user-facing barrier.
+
+2. SOLUTION_SENTENCE
+A single sentence (under 200 characters) that concisely describes the proposed
+or recommended solution for this issue. Focus on the corrective action.
+
+3. ACR_NOTE  
 A concise, professional note suitable for an accessibility compliance report.
 Describe the user impact and barrier in plain, neutral language. Do not speculate
 beyond the information provided.
 
-2. DEVELOPER_NOTE  
+4. DEVELOPER_NOTE  
 Actionable technical guidance focused on fixing the issue.  
 Prioritize:
 - Semantic HTML solutions first
@@ -64,13 +72,13 @@ Prioritize:
 Note known patches, common fixes, or references to authoritative guidance when relevant.
 Avoid deprecated techniques and unnecessary complexity.
 
-3. TITLE_ASSESSMENT  
+5. TITLE_ASSESSMENT  
 Indicate whether the issue title accurately reflects the described barrier.
 Respond with:
 - OK
 - SUGGEST (if misleading, vague, or incorrect)
 
-4. WCAG_ASSESSMENT  
+6. WCAG_ASSESSMENT  
 Provide the applicable WCAG 2.2 Success Criterion number ONLY (for example: 1.1.1).
 Do not include the criterion name, level, or explanation.
 
@@ -93,6 +101,8 @@ Implementation priority order:
 
 Format the response exactly as follows:
 
+PROBLEM_SENTENCE: ...
+SOLUTION_SENTENCE: ...
 ACR_NOTE: ...
 DEVELOPER_NOTE: ...
 TITLE_ASSESSMENT: ...
@@ -105,6 +115,8 @@ WCAG_ASSESSMENT: ...
         wcag = "Unknown"
         acr_note = ""
         dev_note = ""
+        problem_sentence = ""
+        solution_sentence = ""
         
         for line in text.strip().split('\n'):
             line = line.strip()
@@ -114,8 +126,10 @@ WCAG_ASSESSMENT: ...
             if line.startswith("ACR_NOTE:"): acr_note = line.replace("ACR_NOTE:", "").strip()
             if line.startswith("DEVELOPER_NOTE:"): dev_note = line.replace("DEVELOPER_NOTE:", "").strip()
             elif line.startswith("DEV_NOTE:"): dev_note = line.replace("DEV_NOTE:", "").strip()
+            if line.startswith("PROBLEM_SENTENCE:"): problem_sentence = line.replace("PROBLEM_SENTENCE:", "").strip()
+            if line.startswith("SOLUTION_SENTENCE:"): solution_sentence = line.replace("SOLUTION_SENTENCE:", "").strip()
             
-        return wcag, acr_note, dev_note
+        return wcag, acr_note, dev_note, problem_sentence, solution_sentence
     except Exception as e:
         error_str = str(e)
         # Check for critical quota/rate limit errors
@@ -129,7 +143,7 @@ WCAG_ASSESSMENT: ...
         error_msg = error_str.split('\n')[0]
         if len(error_msg) > 200: error_msg = error_msg[:200] + "..."
         print(f"Error analyzing issue: {error_msg}")
-        return "Error", "Error", "Error"
+        return "Error", "Error", "Error", "Error", "Error"
 
 def run(results_dir, ai_config, limit=None):
     files = sorted(results_dir.glob("issues_raw_*.csv"))
@@ -147,7 +161,7 @@ def run(results_dir, ai_config, limit=None):
         df = df.head(limit)
     
     # Ensure output columns exist
-    for col in ['ai_wcag', 'acr_note', 'dev_note']:
+    for col in ['ai_wcag', 'acr_note', 'dev_note', 'problem_sentence', 'solution_sentence']:
         if col not in df.columns:
             df[col] = ""
     
@@ -207,7 +221,7 @@ def run(results_dir, ai_config, limit=None):
             issue_num = f"#{issue_num} "
         
         print(f"Processing {issue_num}{idx+1}/{len(df)}: {row['Issue Title'][:30]}...")
-        wcag, acr, dev = analyze_issue(row, model)
+        wcag, acr, dev, problem, solution = analyze_issue(row, model)
         
         # Prefer AI wcag detection if raw was unknown
         final_wcag = wcag if row['wcag_sc'] == "Unknown" else row['wcag_sc']
@@ -216,6 +230,8 @@ def run(results_dir, ai_config, limit=None):
         row['ai_wcag'] = final_wcag
         row['acr_note'] = acr
         row['dev_note'] = dev
+        row['problem_sentence'] = problem
+        row['solution_sentence'] = solution
         
         # Save incrementally
         # Create a DataFrame for this single row
