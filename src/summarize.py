@@ -124,10 +124,10 @@ WCAG_ASSESSMENT: ...
             elif line.startswith("WCAG:"): wcag = line.replace("WCAG:", "").strip()
             
             if line.startswith("ACR_NOTE:"): acr_note = line.replace("ACR_NOTE:", "").strip()
-            if line.startswith("DEVELOPER_NOTE:"): dev_note = line.replace("DEVELOPER_NOTE:", "").strip()
+            elif line.startswith("DEVELOPER_NOTE:"): dev_note = line.replace("DEVELOPER_NOTE:", "").strip()
             elif line.startswith("DEV_NOTE:"): dev_note = line.replace("DEV_NOTE:", "").strip()
-            if line.startswith("PROBLEM_SENTENCE:"): problem_sentence = line.replace("PROBLEM_SENTENCE:", "").strip()
-            if line.startswith("SOLUTION_SENTENCE:"): solution_sentence = line.replace("SOLUTION_SENTENCE:", "").strip()
+            elif line.startswith("PROBLEM_SENTENCE:"): problem_sentence = line.replace("PROBLEM_SENTENCE:", "").strip()
+            elif line.startswith("SOLUTION_SENTENCE:"): solution_sentence = line.replace("SOLUTION_SENTENCE:", "").strip()
             
         return wcag, acr_note, dev_note, problem_sentence, solution_sentence
     except Exception as e:
